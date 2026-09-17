@@ -1,0 +1,77 @@
+/* AgendaCard.css - Utilise les variables de ProfilePage.css */
+.agenda-calendar .fc {
+  font-size: 0.75rem;
+  color: var(--texte-principal);
+}
+
+.agenda-calendar .fc-toolbar-title {
+  font-size: 0.9rem !important;
+  font-weight: 700;
+  color: var(--texte-principal);
+}
+
+.agenda-calendar .fc-button {
+  background: var(--fond-carte) !important;
+  border: 1px solid var(--bordure) !important;
+  color: var(--texte-principal) !important;
+  border-radius: 9999px !important;
+  padding: 0.25rem 0.65rem !important;
+  font-size: 0.68rem !important;
+  box-shadow: none !important;
+  text-transform: capitalize;
+  transition: all 0.2s;
+}
+
+.agenda-calendar .fc-button:hover {
+  background: var(--accent) !important;
+  color: var(--texte-inverse) !important;
+  border-color: var(--accent) !important;
+}
+
+.agenda-calendar .fc-button-active {
+  background: var(--accent) !important;
+  color: var(--texte-inverse) !important;
+  border-color: var(--accent) !important;
+}
+
+.agenda-calendar .fc-daygrid-day-number {
+  font-size: 0.7rem;
+  padding: 3px 5px;
+  color: var(--texte-secondaire);
+}
+
+.agenda-calendar .fc-day-today {
+  background: var(--fond-subtil) !important;
+}
+
+.agenda-calendar .fc-scrollgrid {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--bordure);
+}
+
+.agenda-calendar .fc-event {
+  border-radius: 999px !important;
+  border: none !important;
+  padding: 0px 5px;
+  font-size: 0.65rem;
+}
+
+.agenda-calendar .fc-col-header-cell-cushion {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  padding: 5px 0;
+  color: var(--texte-principal);
+  font-weight: 600;
+}
+
+.agenda-calendar .fc-scroller {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.agenda-calendar .fc-scroller::-webkit-scrollbar {
+  display: none;
+}
+.agenda-calendar .fc-event-title {
+  color: var(--texte-principal) !important;
+}

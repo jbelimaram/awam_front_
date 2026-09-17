@@ -1,0 +1,41 @@
+.profile-page {
+  --fond-page: #F7F4EE;
+  --fond-carte: #FCFBF8;
+  --fond-subtil: #E4EBDD;
+  --bordure: #DDD2C2;
+
+  --texte-principal: #6F695B;
+  --texte-secondaire: #968B78;
+  --texte-inverse: #FFFFFF;
+
+  --accent: #A8B89A;
+  --accent-hover: #91A486;
+
+  --accent-chaud: #D99B7C;
+  --accent-chaud-hover: #C98568;
+
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  box-sizing: border-box;
+  background: url('/src/assets/image2.png') no-repeat center center / cover;
+}
+
+.profile-alert-wrapper {
+  width: 100%;
+  max-width: 28rem;
+  margin-bottom: 1.5rem;
+}
+
+.cards-wrapper {
+  display: flex;
+  gap: 1.5rem;
+  align-items: stretch;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 1200px;
+}

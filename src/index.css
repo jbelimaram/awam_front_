@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@theme {
+  /* Fond principal */
+  --color-fond: #e2d0b6;
+  --color-carte: #f0e4d0;
+
+  /* Textes */
+  --color-texte: #3d3226;
+  --color-texte-doux: #7d7267;
+
+  /* Accent principal */
+  --color-accent: #aa634d;
+  --color-accent-hover: #C58C6E;
+
+  /* Bordures */
+  --color-bordure: #c9b89c;
+
+  /* États */
+  --color-succes: #809671;
+  --color-erreur: #aa634d;
+}
