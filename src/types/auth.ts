@@ -31,3 +31,7 @@ export interface ResetPasswordPayload {
 export interface AuthResponse {
   user: User;
 }
+
+export interface ResetTokenExpiryResponse {
+  expires_at: string;
+}

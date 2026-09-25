@@ -5,6 +5,7 @@ import type {
   RegisterPayload,
   ForgotPasswordPayload,
   ResetPasswordPayload,
+  ResetTokenExpiryResponse,
   User,
 } from '../types/auth';
 
@@ -26,6 +27,9 @@ export const authService = {
 
   forgotPassword: (payload: ForgotPasswordPayload): Promise<void> =>
     api.post<void>('/auth/forgot-password', payload),
+
+  getResetTokenExpiry: (token: string): Promise<ResetTokenExpiryResponse> =>
+    api.get<ResetTokenExpiryResponse>(`/auth/reset-password/${token}/expiry`),
 
   resetPassword: (
     token: string,
