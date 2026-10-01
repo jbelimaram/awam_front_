@@ -11,6 +11,8 @@ import {
   type ResetPasswordFormValues,
 } from '../../utils/schemas';
 
+const RESET_DURATION_SECONDS = 5 * 60;
+
 interface ForgotPasswordProps {
   onSubmitEmail: (email: string) => void;
   onGoogleContinue: () => void;
@@ -18,14 +20,6 @@ interface ForgotPasswordProps {
   onNavigateToLogin: () => void;
   step: 'request' | 'reset';
   isSubmitting: boolean;
-  expiresAt: string | null;
-  isCheckingToken: boolean;
-}
-
-function computeSecondsLeft(expiresAt: string | null): number {
-  if (!expiresAt) return 0;
-  const diffMs = new Date(expiresAt).getTime() - Date.now();
-  return Math.max(0, Math.floor(diffMs / 1000));
 }
 
 export default function ForgotPassword({
@@ -35,30 +29,24 @@ export default function ForgotPassword({
   onNavigateToLogin,
   step,
   isSubmitting,
-  expiresAt,
-  isCheckingToken,
 }: ForgotPasswordProps) {
-  const [secondsLeft, setSecondsLeft] = useState(() => computeSecondsLeft(expiresAt));
-
-  useEffect(() => {
-    setSecondsLeft(computeSecondsLeft(expiresAt));
-  }, [expiresAt]);
+  const [secondsLeft, setSecondsLeft] = useState(RESET_DURATION_SECONDS);
 
   useEffect(() => {
     if (step !== 'reset') return;
     if (secondsLeft <= 0) return;
 
     const timer = setInterval(() => {
-      setSecondsLeft(computeSecondsLeft(expiresAt));
+      setSecondsLeft((prev) => prev - 1);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [step, expiresAt, secondsLeft]);
+  }, [step, secondsLeft]);
 
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
   const timeDisplay = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  const isExpired = !isCheckingToken && secondsLeft <= 0;
+  const isExpired = secondsLeft <= 0;
 
   const {
     register: registerEmail,
@@ -134,14 +122,9 @@ export default function ForgotPassword({
           <h2 className="text-lg font-medium text-white text-center mb-2">
             Créer un nouveau mot de passe
           </h2>
-
-          {isCheckingToken ? (
-            <p className="text-center text-xs text-white/60 mb-6">Vérification du lien...</p>
-          ) : (
-            <p className={`text-center text-xs mb-6 ${secondsLeft <= 60 ? 'text-erreur font-semibold' : 'text-white/60'}`}>
-              {isExpired ? '⏱️ Ce lien a expiré, veuillez refaire une demande.' : `⏱️ Ce lien expire dans ${timeDisplay}`}
-            </p>
-          )}
+          <p className={`text-center text-xs mb-6 ${secondsLeft <= 60 ? 'text-erreur font-semibold' : 'text-white/60'}`}>
+            {isExpired ? '⏱️ Ce lien a expiré, veuillez refaire une demande.' : `⏱️ Ce lien expire dans ${timeDisplay}`}
+          </p>
 
           <form onSubmit={handleResetSubmit(submitReset)} noValidate>
             <Input
@@ -149,7 +132,7 @@ export default function ForgotPassword({
               label="Nouveau mot de passe"
               type="password"
               error={resetErrors.password?.message}
-              disabled={isSubmitting || isExpired || isCheckingToken}
+              disabled={isSubmitting || isExpired}
               {...registerReset('password')}
             />
 
@@ -158,11 +141,11 @@ export default function ForgotPassword({
               label="Confirmer le mot de passe"
               type="password"
               error={resetErrors.confirmPassword?.message}
-              disabled={isSubmitting || isExpired || isCheckingToken}
+              disabled={isSubmitting || isExpired}
               {...registerReset('confirmPassword')}
             />
 
-            <Button type="submit" variant="primary" isLoading={isSubmitting} disabled={isExpired || isCheckingToken}>
+            <Button type="submit" variant="primary" isLoading={isSubmitting} disabled={isExpired}>
               Réinitialiser le mot de passe
             </Button>
           </form>

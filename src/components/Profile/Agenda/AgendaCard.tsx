@@ -77,8 +77,8 @@ export default function AgendaCard() {
   const calendarEvents = events.map((e) => ({
     id: String(e.id),
     title: e.title,
-    start: e.start_datetime,
-    end: e.end_datetime ?? undefined,
+    start: e.start_at,
+    end: e.end_at ?? undefined,
     backgroundColor: statusColors[e.status].bg,
     borderColor: statusColors[e.status].border,
   }));

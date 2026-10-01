@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import Login from '../components/Auth/Login';
 import { authService } from '../Services/authService';
 import { useAuth } from '../hooks/useAuth';
-import { useFormStatus } from '../hooks/useFormStatus';
+import { useFormStatus } from '../hooks/useWeather';
 import { useToast } from '../hooks/useToast';
 import type { LoginPayload } from '../types/auth';
 

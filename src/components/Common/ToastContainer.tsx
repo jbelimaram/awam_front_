@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { useToast } from '../../hooks/useToast';
+import { useToast } from '../../hooks/useToast.ts'; //j'ai ajouté .ts
 
 const AUTH_ROUTES = ['/login', '/register', '/mot-de-passe-oublie', '/reinitialiser-mot-de-passe'];
 

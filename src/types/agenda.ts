@@ -6,8 +6,8 @@ export interface AgendaEvent {
   user_id: number;
   title: string;
   description: string | null;
-  start_datetime: string;
-  end_datetime: string | null;
+  start_at: string;
+  end_at: string | null;
   status: AgendaStatus;
   reminder_sent: boolean;
   reminder: AgendaReminder | null;
@@ -18,8 +18,8 @@ export interface AgendaEvent {
 export interface CreateAgendaEventPayload {
   title: string;
   description?: string | null;
-  start_datetime: string;
-  end_datetime?: string | null;
+  start_at: string;
+  end_at?: string | null;
   status?: AgendaStatus;
   reminder?: AgendaReminder | null;
   reminder_custom_minutes?: number | null;
@@ -29,8 +29,8 @@ export interface CreateAgendaEventPayload {
 export interface UpdateAgendaEventPayload {
   title?: string;
   description?: string | null;
-  start_datetime?: string;
-  end_datetime?: string | null;
+  start_at?: string;
+  end_at?: string | null;
   status?: AgendaStatus;
   reminder?: AgendaReminder | null;
   reminder_custom_minutes?: number | null;

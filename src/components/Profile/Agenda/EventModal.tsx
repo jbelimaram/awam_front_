@@ -41,8 +41,8 @@ export default function EventModal({ event, defaultStart, onSave, onDelete, onCl
     defaultValues: {
       title: event?.title ?? '',
       description: event?.description ?? '',
-      start_datetime: toLocalInputValue(event?.start_datetime ?? defaultStart),
-      end_datetime: toLocalInputValue(event?.end_datetime),
+      start_datetime: toLocalInputValue(event?.start_at ?? defaultStart),
+      end_datetime: toLocalInputValue(event?.end_at),
       status: event?.status ?? 'a_faire',
       reminder: event?.reminder ?? '1_day',
       reminder_custom_amount: event?.reminder_custom_minutes ?? undefined,
@@ -68,8 +68,8 @@ export default function EventModal({ event, defaultStart, onSave, onDelete, onCl
 
     const payload = {
       ...rest,
-      start_datetime: new Date(data.start_datetime).toISOString(),
-      end_datetime: data.end_datetime ? new Date(data.end_datetime).toISOString() : undefined,
+      start_at: new Date(data.start_datetime).toISOString(),
+      end_at: data.end_datetime ? new Date(data.end_datetime).toISOString() : undefined,
       reminder_custom_minutes,
       reminder_custom_unit: data.reminder === 'custom' ? reminder_custom_unit : undefined,
     };
@@ -118,16 +118,11 @@ export default function EventModal({ event, defaultStart, onSave, onDelete, onCl
             </label>
             <select
               id="event-status"
-              disabled={isSubmitting || !event}
+              disabled={isSubmitting}
               className="w-full px-3 py-2 rounded-lg border outline-none transition text-sm bg-white/10 text-white border-white/20"
-              style={{
-                appearance: !event ? 'none' : undefined,
-                WebkitAppearance: !event ? 'none' : undefined,
-                MozAppearance: !event ? 'none' : undefined,
-              }}
               {...register('status')}
             >
-              {(event ? agendaStatusValues : (['a_faire'] as const)).map((value) => (
+              {agendaStatusValues.map((value) => (
                 <option key={value} value={value}>
                   {statusConfig[value].label}
                 </option>

@@ -1,4 +1,4 @@
-import { api, ApiError, handleUnauthorized } from './api';
+import { api } from './api';
 import type {
   Profile,
   UpdateFullNamePayload,
@@ -27,8 +27,7 @@ export const profileService = {
     formData.append('file', file);
 
     const API_URL = import.meta.env.VITE_API_URL;
-    const endpoint = '/profile/avatar';
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(`${API_URL}/profile/avatar`, {
       method: 'POST',
       credentials: 'include',
       body: formData,
@@ -36,26 +35,7 @@ export const profileService = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
-
-      let message = "Erreur lors de l'envoi de l'image.";
-
-      if (errorData?.detail) {
-        if (typeof errorData.detail === 'string') {
-          message = errorData.detail;
-        } else if (Array.isArray(errorData.detail)) {
-          message = errorData.detail
-            .map((err: { loc?: (string | number)[]; msg: string }) =>
-              err.loc ? `${err.loc[err.loc.length - 1]} : ${err.msg}` : err.msg
-            )
-            .join(' — ');
-        }
-      }
-
-      if (response.status === 401) {
-        handleUnauthorized(endpoint);
-      }
-
-      throw new ApiError(response.status, message);
+      throw new Error(errorData?.detail || "Erreur lors de l'envoi de l'image.");
     }
 
     return response.json();
