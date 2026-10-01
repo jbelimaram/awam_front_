@@ -6,12 +6,11 @@ import interactionPlugin from '@fullcalendar/interaction';
 import frLocale from '@fullcalendar/core/locales/fr';   // ⬅️ AJOUT
 import type { DateSelectArg, EventClickArg } from '@fullcalendar/core';
 import { agendaService } from '../../../Services/agendaService';
-import type { AgendaEvent, AgendaStatus } from '../../../types/agenda';
+import type { AgendaEvent, AgendaStatus, CreateAgendaEventPayload } from '../../../types/agenda';
 import { statusConfig, statusColors } from './statusConfig';
 import TodayPreview from './TodayPreview';
 import EventModal from './EventModal';
 import { useToast } from '../../../hooks/useToast';
-import type { AgendaEventFormValues } from '../../../utils/schemas';
 import './AgendaCard.css';
 
 export default function AgendaCard() {
@@ -22,10 +21,14 @@ export default function AgendaCard() {
   const [defaultStart, setDefaultStart] = useState<string | undefined>(undefined);
   const { showToast } = useToast();
 
+  const errorMessage = (err: unknown) =>
+    err instanceof Error ? err.message : 'Une erreur est survenue. Veuillez réessayer.';
+
   const loadEvents = () => {
     agendaService
       .listEvents()
       .then(setEvents)
+      .catch((err) => showToast('error', errorMessage(err)))
       .finally(() => setIsLoading(false));
   };
 
@@ -54,24 +57,33 @@ export default function AgendaCard() {
     setIsModalOpen(true);
   };
 
-  const handleSave = async (data: AgendaEventFormValues) => {
-    if (selectedEvent) {
-      await agendaService.updateEvent(selectedEvent.id, data as any);
-      showToast('success', 'Événement modifié avec succès.');
-    } else {
-      await agendaService.createEvent(data as any);
-      showToast('success', 'Événement créé avec succès.');
+  // En cas d'erreur du back, le formulaire reste ouvert pour corriger
+  const handleSave = async (payload: CreateAgendaEventPayload) => {
+    try {
+      if (selectedEvent) {
+        await agendaService.updateEvent(selectedEvent.id, payload);
+        showToast('success', 'Événement modifié avec succès.');
+      } else {
+        await agendaService.createEvent(payload);
+        showToast('success', 'Événement créé avec succès.');
+      }
+      setIsModalOpen(false);
+      loadEvents();
+    } catch (err) {
+      showToast('error', errorMessage(err));
     }
-    setIsModalOpen(false);
-    loadEvents();
   };
 
   const handleDelete = async () => {
     if (!selectedEvent) return;
-    await agendaService.deleteEvent(selectedEvent.id);
-    showToast('success', 'Événement supprimé avec succès.');
-    setIsModalOpen(false);
-    loadEvents();
+    try {
+      await agendaService.deleteEvent(selectedEvent.id);
+      showToast('success', 'Événement supprimé avec succès.');
+      setIsModalOpen(false);
+      loadEvents();
+    } catch (err) {
+      showToast('error', errorMessage(err));
+    }
   };
 
   const calendarEvents = events.map((e) => ({

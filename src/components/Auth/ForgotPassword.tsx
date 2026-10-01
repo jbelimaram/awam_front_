@@ -11,7 +11,14 @@ import {
   type ResetPasswordFormValues,
 } from '../../utils/schemas';
 
-const RESET_DURATION_SECONDS = 5 * 60;
+export type ResetLinkStatus = 'checking' | 'valid' | 'invalid';
+
+/** Secondes restantes avant la date d'expiration renvoyée par le back. */
+function computeSecondsLeft(expiresAt: string | null): number {
+  if (!expiresAt) return 0;
+  const ms = new Date(expiresAt).getTime() - Date.now();
+  return Number.isNaN(ms) ? 0 : Math.max(0, Math.round(ms / 1000));
+}
 
 interface ForgotPasswordProps {
   onSubmitEmail: (email: string) => void;
@@ -20,6 +27,8 @@ interface ForgotPasswordProps {
   onNavigateToLogin: () => void;
   step: 'request' | 'reset';
   isSubmitting: boolean;
+  expiresAt?: string | null;
+  linkStatus?: ResetLinkStatus;
 }
 
 export default function ForgotPassword({
@@ -29,24 +38,33 @@ export default function ForgotPassword({
   onNavigateToLogin,
   step,
   isSubmitting,
+  expiresAt = null,
+  linkStatus = 'checking',
 }: ForgotPasswordProps) {
-  const [secondsLeft, setSecondsLeft] = useState(RESET_DURATION_SECONDS);
+  const [secondsLeft, setSecondsLeft] = useState(() => computeSecondsLeft(expiresAt));
 
+  // Compte à rebours recalculé chaque seconde à partir de la vraie date
+  // d'expiration fournie par le back.
   useEffect(() => {
-    if (step !== 'reset') return;
-    if (secondsLeft <= 0) return;
+    setSecondsLeft(computeSecondsLeft(expiresAt));
+    if (step !== 'reset' || linkStatus !== 'valid' || !expiresAt) return;
 
     const timer = setInterval(() => {
-      setSecondsLeft((prev) => prev - 1);
+      const left = computeSecondsLeft(expiresAt);
+      setSecondsLeft(left);
+      if (left <= 0) clearInterval(timer);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [step, secondsLeft]);
+  }, [step, linkStatus, expiresAt]);
 
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
   const timeDisplay = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  const isExpired = secondsLeft <= 0;
+  const isChecking = linkStatus === 'checking';
+  const isInvalid = linkStatus === 'invalid';
+  const isExpired = isInvalid || (linkStatus === 'valid' && secondsLeft <= 0);
+  const isUrgent = isExpired || (linkStatus === 'valid' && secondsLeft <= 60);
 
   const {
     register: registerEmail,
@@ -122,8 +140,14 @@ export default function ForgotPassword({
           <h2 className="text-lg font-medium text-white text-center mb-2">
             Créer un nouveau mot de passe
           </h2>
-          <p className={`text-center text-xs mb-6 ${secondsLeft <= 60 ? 'text-erreur font-semibold' : 'text-white/60'}`}>
-            {isExpired ? '⏱️ Ce lien a expiré, veuillez refaire une demande.' : `⏱️ Ce lien expire dans ${timeDisplay}`}
+          <p className={`text-center text-xs mb-6 ${isUrgent ? 'text-erreur font-semibold' : 'text-white/60'}`}>
+            {isChecking
+              ? '⏱️ Vérification du lien…'
+              : isInvalid
+              ? '⏱️ Ce lien est invalide ou a expiré, veuillez refaire une demande.'
+              : isExpired
+              ? '⏱️ Ce lien a expiré, veuillez refaire une demande.'
+              : `⏱️ Ce lien expire dans ${timeDisplay}`}
           </p>
 
           <form onSubmit={handleResetSubmit(submitReset)} noValidate>
@@ -132,7 +156,7 @@ export default function ForgotPassword({
               label="Nouveau mot de passe"
               type="password"
               error={resetErrors.password?.message}
-              disabled={isSubmitting || isExpired}
+              disabled={isSubmitting || isExpired || isChecking}
               {...registerReset('password')}
             />
 
@@ -141,11 +165,11 @@ export default function ForgotPassword({
               label="Confirmer le mot de passe"
               type="password"
               error={resetErrors.confirmPassword?.message}
-              disabled={isSubmitting || isExpired}
+              disabled={isSubmitting || isExpired || isChecking}
               {...registerReset('confirmPassword')}
             />
 
-            <Button type="submit" variant="primary" isLoading={isSubmitting} disabled={isExpired}>
+            <Button type="submit" variant="primary" isLoading={isSubmitting} disabled={isExpired || isChecking}>
               Réinitialiser le mot de passe
             </Button>
           </form>

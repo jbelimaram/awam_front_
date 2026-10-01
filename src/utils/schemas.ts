@@ -2,12 +2,12 @@ import { z } from 'zod';
 
 const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/; // lettres, espaces, tirets, apostrophes (Jean-Pierre, O'Brien)
 
-export const nameField = (label: string) =>
+export const nameField = (label: string, max = 50) =>
   z
     .string()
     .trim()
     .min(1, `${label} est requis.`)
-    .max(50, `${label} ne doit pas dépasser 50 caractères.`)
+    .max(max, `${label} ne doit pas dépasser ${max} caractères.`)
     .regex(nameRegex, `${label} ne doit contenir que des lettres.`);
 
 export const emailField = z
@@ -37,6 +37,11 @@ export const registerSchema = z
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Les mots de passe ne correspondent pas.',
     path: ['confirmPassword'],
+  })
+  // Le back enregistre « prénom nom » dans full_name (100 caractères max en base)
+  .refine((data) => `${data.firstName} ${data.lastName}`.length <= 100, {
+    message: 'Le prénom et le nom réunis ne doivent pas dépasser 99 caractères.',
+    path: ['lastName'],
   });
 
 export type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -66,7 +71,7 @@ export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 
 export const fullNameUpdateSchema = z.object({
-  full_name: nameField('Le nom complet'),
+  full_name: nameField('Le nom complet', 100),
 });
 export type FullNameUpdateValues = z.infer<typeof fullNameUpdateSchema>;
 

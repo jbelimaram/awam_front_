@@ -4,12 +4,12 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import { agendaEventSchema, agendaStatusValues, agendaReminderValues, reminderUnitValues, type AgendaEventFormValues } from '../../../utils/schemas';
 import { statusConfig } from './statusConfig';
-import type { AgendaEvent } from '../../../types/agenda';
+import type { AgendaEvent, CreateAgendaEventPayload } from '../../../types/agenda';
 
 interface EventModalProps {
   event: AgendaEvent | null;
   defaultStart?: string;
-  onSave: (data: AgendaEventFormValues) => Promise<void>;
+  onSave: (payload: CreateAgendaEventPayload) => Promise<void>;
   onDelete?: () => Promise<void>;
   onClose: () => void;
 }
@@ -22,6 +22,26 @@ const reminderLabels: Record<string, string> = {
   custom: 'Personnalisé',
 };
 
+const UNIT_TO_MINUTES: Record<(typeof reminderUnitValues)[number], number> = {
+  minutes: 1,
+  hours: 60,
+  days: 1440,
+};
+
+/**
+ * Le back enregistre le rappel personnalisé en minutes uniquement.
+ * On retrouve l'unité la plus lisible pour l'affichage : 120 → 2 heures, 1440 → 1 jour.
+ */
+function splitReminderMinutes(minutes: number | null | undefined): {
+  amount: number | undefined;
+  unit: (typeof reminderUnitValues)[number];
+} {
+  if (!minutes) return { amount: undefined, unit: 'minutes' };
+  if (minutes % UNIT_TO_MINUTES.days === 0) return { amount: minutes / UNIT_TO_MINUTES.days, unit: 'days' };
+  if (minutes % UNIT_TO_MINUTES.hours === 0) return { amount: minutes / UNIT_TO_MINUTES.hours, unit: 'hours' };
+  return { amount: minutes, unit: 'minutes' };
+}
+
 function toLocalInputValue(isoString: string | null | undefined): string {
   if (!isoString) return '';
   const date = new Date(isoString);
@@ -31,6 +51,8 @@ function toLocalInputValue(isoString: string | null | undefined): string {
 }
 
 export default function EventModal({ event, defaultStart, onSave, onDelete, onClose }: EventModalProps) {
+  const customReminder = splitReminderMinutes(event?.reminder_custom_minutes);
+
   const {
     register,
     handleSubmit,
@@ -45,35 +67,31 @@ export default function EventModal({ event, defaultStart, onSave, onDelete, onCl
       end_datetime: toLocalInputValue(event?.end_at),
       status: event?.status ?? 'a_faire',
       reminder: event?.reminder ?? '1_day',
-      reminder_custom_amount: event?.reminder_custom_minutes ?? undefined,
-      reminder_custom_unit: (event?.reminder_custom_unit as 'minutes' | 'hours' | 'days' | undefined) ?? 'minutes',
+      reminder_custom_amount: customReminder.amount,
+      reminder_custom_unit: customReminder.unit,
     },
   });
 
   const selectedReminder = watch('reminder');
 
-  const UNIT_TO_MINUTES: Record<string, number> = {
-    minutes: 1,
-    hours: 60,
-    days: 1440,
-  };
-
   const submit = async (data: AgendaEventFormValues) => {
-    const { reminder_custom_amount, reminder_custom_unit, ...rest } = data;
-
+    const isCustom = data.reminder === 'custom';
     const reminder_custom_minutes =
-      data.reminder === 'custom' && reminder_custom_amount && reminder_custom_unit
-        ? reminder_custom_amount * UNIT_TO_MINUTES[reminder_custom_unit]
-        : undefined;
+      isCustom && data.reminder_custom_amount && data.reminder_custom_unit
+        ? data.reminder_custom_amount * UNIT_TO_MINUTES[data.reminder_custom_unit]
+        : null;
 
-    const payload = {
-      ...rest,
+    const payload: CreateAgendaEventPayload = {
+      title: data.title,
+      description: data.description,
+      status: data.status,
+      reminder: data.reminder,
       start_at: new Date(data.start_datetime).toISOString(),
-      end_at: data.end_datetime ? new Date(data.end_datetime).toISOString() : undefined,
+      // null (et non undefined) : un champ vidé doit effacer l'ancienne date de fin
+      end_at: data.end_datetime ? new Date(data.end_datetime).toISOString() : null,
       reminder_custom_minutes,
-      reminder_custom_unit: data.reminder === 'custom' ? reminder_custom_unit : undefined,
     };
-    await onSave(payload as any);
+    await onSave(payload);
   };
 
   return (

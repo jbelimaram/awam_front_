@@ -4,18 +4,35 @@ interface RequestOptions extends RequestInit {
   body?: any;
 }
 
+/**
+ * Transforme le `detail` d'une erreur du back en message lisible.
+ *  - texte (erreurs 400, 401, 404, 409…) : renvoyé tel quel ;
+ *  - liste (erreur 422 de validation FastAPI/Pydantic) : on garde le `msg`
+ *    de chaque élément, sans le préfixe « Value error, » ajouté par Pydantic.
+ */
+export function formatErrorDetail(detail: unknown, fallback = 'Une erreur est survenue.'): string {
+  if (typeof detail === 'string') return detail || fallback;
+
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) =>
+        item && typeof item === 'object' && typeof (item as { msg?: unknown }).msg === 'string'
+          ? (item as { msg: string }).msg.replace(/^Value error, /, '')
+          : null
+      )
+      .filter((msg): msg is string => Boolean(msg));
+    return messages.length > 0 ? messages.join(' ') : fallback;
+  }
+
+  return detail ? JSON.stringify(detail) : fallback;
+}
+
 class ApiError extends Error {
   status: number;
   detail: unknown;
 
   constructor(status: number, detail: unknown) {
-    const message =
-      typeof detail === 'string'
-        ? detail
-        : detail
-        ? JSON.stringify(detail)
-        : 'Une erreur est survenue.';
-    super(message);
+    super(formatErrorDetail(detail));
     this.status = status;
     this.detail = detail;
   }

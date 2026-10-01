@@ -5,6 +5,7 @@ import type {
   RegisterPayload,
   ForgotPasswordPayload,
   ResetPasswordPayload,
+  ResetTokenExpiryResponse,
   User,
 } from '../types/auth';
 
@@ -34,6 +35,11 @@ loginWithGoogle: (): void => {
     token: string,
     payload: ResetPasswordPayload
   ): Promise<void> => api.post<void>(`/auth/reset-password/${token}`, payload),
+
+  // Vraie date d'expiration du lien, décidée par le back.
+  // Erreur 400 si le lien est invalide, déjà utilisé ou expiré.
+  getResetTokenExpiry: (token: string): Promise<ResetTokenExpiryResponse> =>
+    api.get<ResetTokenExpiryResponse>(`/auth/reset-password/${token}/expiry`),
 
 
   //updateProfile: (payload: { username?: string; full_name?: string; email?: string }): Promise<User> =>

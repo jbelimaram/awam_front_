@@ -1,8 +1,9 @@
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Login from '../components/Auth/Login';
 import { authService } from '../Services/authService';
 import { useAuth } from '../hooks/useAuth';
-import { useFormStatus } from '../hooks/useWeather';
+import { useFormStatus } from '../hooks/useFormStatus';
 import { useToast } from '../hooks/useToast';
 import type { LoginPayload } from '../types/auth';
 
@@ -11,6 +12,19 @@ export default function LoginPage() {
   const { login } = useAuth();
   const { isSubmitting, run } = useFormStatus();
   const { showToast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const googleErrorShown = useRef(false);
+
+  // Retour d'un échec de connexion Google : le back redirige vers
+  // /login?error=google_auth_failed
+  useEffect(() => {
+    if (searchParams.get('error') !== 'google_auth_failed' || googleErrorShown.current) return;
+    googleErrorShown.current = true;
+    showToast('error', 'La connexion avec Google a échoué ou a été annulée. Veuillez réessayer.');
+    // On retire le paramètre pour que le message ne réapparaisse pas au rafraîchissement
+    searchParams.delete('error');
+    setSearchParams(searchParams, { replace: true });
+  }, [searchParams, setSearchParams, showToast]);
 
   const handleSubmit = (data: LoginPayload) => {
     run(async () => {

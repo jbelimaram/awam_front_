@@ -1,7 +1,8 @@
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import ForgotPassword from '../components/Auth/ForgotPassword';
+import ForgotPassword, { type ResetLinkStatus } from '../components/Auth/ForgotPassword';
 import { authService } from '../Services/authService';
-import { useFormStatus } from '../hooks/useWeather';
+import { useFormStatus } from '../hooks/useFormStatus';
 import { useToast } from '../hooks/useToast';
 import type { ResetPasswordPayload } from '../types/auth';
 
@@ -11,6 +12,31 @@ export default function ForgotPasswordPage() {
   const step = token ? 'reset' : 'request';
   const { isSubmitting, run } = useFormStatus();
   const { showToast } = useToast();
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [linkStatus, setLinkStatus] = useState<ResetLinkStatus>('checking');
+
+  // À l'ouverture du lien reçu par e-mail : on demande au back la vraie
+  // date d'expiration (ou s'il est invalide / déjà utilisé / expiré).
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    setLinkStatus('checking');
+    authService
+      .getResetTokenExpiry(token)
+      .then((data) => {
+        if (cancelled) return;
+        setExpiresAt(data.expires_at);
+        setLinkStatus('valid');
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setExpiresAt(null);
+        setLinkStatus('invalid');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   const handleSubmitEmail = (email: string) => {
     run(async () => {
@@ -40,6 +66,8 @@ export default function ForgotPasswordPage() {
       onSubmitNewPassword={handleSubmitNewPassword}
       onNavigateToLogin={() => navigate('/login')}
       isSubmitting={isSubmitting}
+      expiresAt={expiresAt}
+      linkStatus={linkStatus}
     />
   );
 }

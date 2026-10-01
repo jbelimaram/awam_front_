@@ -7,9 +7,8 @@ import EditPasswordPanel from '../components/Profile/EditPasswordPanel';
 import AgendaCard from '../components/Profile/Agenda/AgendaCard';
 
 import { profileService } from '../Services/profileService';
-import { authService } from '../Services/authService';
 import { useAuth } from '../hooks/useAuth';
-import { useFormStatus } from '../hooks/useWeather';
+import { useFormStatus } from '../hooks/useFormStatus';
 import { useToast } from '../hooks/useToast';
 import type { Profile } from '../types/profile';
 
@@ -30,19 +29,42 @@ export default function ProfilePage() {
   const { logout } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [editingField, setEditingField] = useState<EditingField>(null);
   const { run, reset } = useFormStatus();
   const { showToast } = useToast();
 
   useEffect(() => {
+    let cancelled = false;
     profileService
       .getProfile()
-      .then(setProfile)
-      .finally(() => setIsLoading(false));
-  }, []);
+      .then((data) => {
+        if (cancelled) return;
+        setProfile(data);
+        setLoadError(null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        // Ex. session expirée (401) ou back injoignable : on affiche la raison
+        setLoadError(err instanceof Error ? err.message : 'Impossible de charger le profil.');
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
 
+  const handleRetry = () => {
+    setIsLoading(true);
+    setLoadError(null);
+    setReloadKey((k) => k + 1);
+  };
+
+  // logout() de AuthContext appelle déjà authService.logout() (POST /auth/logout)
   const handleLogout = async () => {
-    await authService.logout();
     await logout();
     navigate('/login');
   };
@@ -91,10 +113,34 @@ export default function ProfilePage() {
     setEditingField(field);
   };
 
-  if (isLoading || !profile) {
+  if (isLoading) {
     return (
       <div className="profile-page flex items-center justify-center">
         Chargement...
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="profile-page flex flex-col items-center justify-center gap-4 text-center">
+        <p>{loadError ?? 'Impossible de charger le profil.'}</p>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={handleRetry}
+            className="px-4 py-2 rounded-lg border border-current hover:opacity-80"
+          >
+            Réessayer
+          </button>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="px-4 py-2 rounded-lg border border-current hover:opacity-80"
+          >
+            Se reconnecter
+          </button>
+        </div>
       </div>
     );
   }

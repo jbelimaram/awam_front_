@@ -1,4 +1,4 @@
-import { api } from './api';
+import { api, ApiError } from './api';
 import type {
   Profile,
   UpdateFullNamePayload,
@@ -35,7 +35,7 @@ export const profileService = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
-      throw new Error(errorData?.detail || "Erreur lors de l'envoi de l'image.");
+      throw new ApiError(response.status, errorData?.detail || "Erreur lors de l'envoi de l'image.");
     }
 
     return response.json();

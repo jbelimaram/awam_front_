@@ -12,7 +12,6 @@ export interface AgendaEvent {
   reminder_sent: boolean;
   reminder: AgendaReminder | null;
   reminder_custom_minutes: number | null;
-  reminder_custom_unit: string | null;
 }
 
 export interface CreateAgendaEventPayload {
@@ -23,7 +22,6 @@ export interface CreateAgendaEventPayload {
   status?: AgendaStatus;
   reminder?: AgendaReminder | null;
   reminder_custom_minutes?: number | null;
-  reminder_custom_unit?: string | null;
 }
 
 export interface UpdateAgendaEventPayload {
@@ -34,5 +32,4 @@ export interface UpdateAgendaEventPayload {
   status?: AgendaStatus;
   reminder?: AgendaReminder | null;
   reminder_custom_minutes?: number | null;
-  reminder_custom_unit?: string | null;
 }
