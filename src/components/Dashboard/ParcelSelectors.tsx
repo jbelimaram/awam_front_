@@ -1,53 +1,98 @@
 import { useSelection } from "../../hooks/useSelection";
 
-export default function ParcelSelectors() {
-  const {
-    farms,
-    selectedFarmId,
-    selectedParcelId,
-    parcelsForSelectedFarm,
-    selectFarm,
-    selectParcel,
-    loadingFarms,
-    loadingParcels,
-  } = useSelection();
+interface ParcelSelectorsProps {
+  onAddParcel: () => void;
+  canAddParcel: boolean;
+}
+
+/**
+ * Liste des parcelles de la ferme sélectionnée, avec le bouton « + »
+ * qui lance le dessin d'une nouvelle parcelle sur la carte.
+ */
+export default function ParcelSelectors({ onAddParcel, canAddParcel }: ParcelSelectorsProps) {
+  const { selectedParcelId, parcelsForSelectedFarm, selectParcel, loadingParcels, selectedFarmId } =
+    useSelection();
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8, fontFamily: "system-ui, sans-serif", fontSize: 14 }}>
-      <div>
-        <label style={{ display: "block", fontSize: 11, color: "#666", marginBottom: 4 }}>
-          Ferme {loadingFarms && "…"}
-        </label>
-        <select
-          value={selectedFarmId ?? ""}
-          onChange={(e) => selectFarm(Number(e.target.value) || null)}
-          style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #ddd", fontSize: 13 }}
+    <div style={{ fontFamily: "system-ui, sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <strong style={{ fontSize: 14, color: "#111827" }}>Parcelles</strong>
+        <button
+          type="button"
+          onClick={onAddParcel}
+          disabled={!canAddParcel}
+          title={canAddParcel ? "Dessiner une nouvelle parcelle" : "Sélectionnez d'abord une ferme"}
+          style={{
+            width: 26,
+            height: 26,
+            borderRadius: 6,
+            border: "1px solid #cbd5e1",
+            background: "#ffffff",
+            color: "#1b4332",
+            fontSize: 16,
+            lineHeight: 1,
+            cursor: canAddParcel ? "pointer" : "not-allowed",
+            opacity: canAddParcel ? 1 : 0.45,
+          }}
         >
-          {farms.length === 0 && <option value="">Aucune ferme</option>}
-          {farms.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.name}
-            </option>
-          ))}
-        </select>
+          ＋
+        </button>
       </div>
 
-      <div>
-        <label style={{ display: "block", fontSize: 11, color: "#666", marginBottom: 4 }}>
-          Parcelle {loadingParcels && "…"}
-        </label>
-        <select
-          value={selectedParcelId ?? ""}
-          onChange={(e) => selectParcel(Number(e.target.value) || null)}
-          style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #ddd", fontSize: 13 }}
-        >
-          <option value="">— Choisir une parcelle —</option>
-          {parcelsForSelectedFarm.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nom}
-            </option>
-          ))}
-        </select>
+      {loadingParcels && <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>Chargement…</p>}
+
+      {!loadingParcels && selectedFarmId === null && (
+        <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>Sélectionnez une ferme.</p>
+      )}
+
+      {!loadingParcels && selectedFarmId !== null && parcelsForSelectedFarm.length === 0 && (
+        <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
+          Aucune parcelle. Utilisez « ＋ » pour en dessiner une.
+        </p>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: 200, overflowY: "auto" }}>
+        {parcelsForSelectedFarm.map((p) => {
+          const isActive = p.id === selectedParcelId;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => selectParcel(p.id)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "7px 10px",
+                borderRadius: 6,
+                border: "none",
+                background: isActive ? "#1b4332" : "transparent",
+                color: isActive ? "#ffffff" : "#111827",
+                cursor: "pointer",
+                fontSize: 13,
+                textAlign: "left",
+                width: "100%",
+              }}
+            >
+              <span
+                title={p.status === "active" ? "Parcelle active" : "Parcelle inactive"}
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  flexShrink: 0,
+                  background: p.status === "active" ? "#16a34a" : "#9ca3af",
+                }}
+              />
+              <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {p.nom}
+              </span>
+              <span style={{ fontSize: 11, opacity: isActive ? 0.8 : 0.55 }}>
+                {p.surface_ha.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} ha
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

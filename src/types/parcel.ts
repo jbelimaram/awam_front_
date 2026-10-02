@@ -3,7 +3,10 @@ export interface GeoJsonGeometry {
   coordinates: unknown;
 }
 
-export type RasterStatus = "pending" | "ready" | "failed";
+// "none" : aucun traitement lancé (parcelle inactive, pas d'analyse satellite)
+export type RasterStatus = "pending" | "ready" | "failed" | "none";
+
+export type ParcelStatus = "active" | "inactive";
 
 export interface Parcel {
   id: number;
@@ -11,7 +14,7 @@ export interface Parcel {
   name: string;
   culture_type?: string | null;
   area_ha?: number | null;
-  status: string;
+  status: ParcelStatus;
   geometry?: GeoJsonGeometry | null; // toujours null via GET /parcels, voir dashboard.ts
   cog_url?: string | null;
   sentinel_rgb_url?: string | null;
@@ -26,6 +29,8 @@ export interface ParcelCreatePayload {
   culture_type?: string | null;
   soil_type?: string | null;
   irrigation_type?: string | null;
+  // Une parcelle créée inactive ne déclenche aucune analyse satellite
+  status?: "active" | "inactive";
 }
 
 export interface ParcelUpdatePayload {

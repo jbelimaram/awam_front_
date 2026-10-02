@@ -1,4 +1,4 @@
-import type { GeoJsonGeometry } from "./parcel";
+import type { GeoJsonGeometry, ParcelStatus, RasterStatus } from "./parcel";
 
 export interface DashboardParcel {
   id: number;
@@ -11,6 +11,8 @@ export interface DashboardParcel {
   culture_type?: string | null;
   soil_type?: string | null;
   irrigation_type?: string | null;
+  status: ParcelStatus;
+  raster_status: RasterStatus;
   created_at: string | null;
   updated_at: string | null;
 }

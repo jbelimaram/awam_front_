@@ -16,10 +16,11 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md bg-gray-800 rounded-2xl shadow-lg p-6"
+        className="w-full max-w-md bg-gray-800 rounded-2xl shadow-lg flex flex-col max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-5">
+        {/* En-tête fixe : le titre et la fermeture restent visibles au défilement */}
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
           <h2 className="text-lg font-semibold text-white">{title}</h2>
           <button
             onClick={onClose}
@@ -29,7 +30,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
             ×
           </button>
         </div>
-        {children}
+        <div className="px-6 pb-6 overflow-y-auto flex-1 min-h-0">{children}</div>
       </div>
     </div>
   );

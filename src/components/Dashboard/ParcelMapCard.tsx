@@ -6,13 +6,15 @@ import {
   useRef,
   useState,
 } from "react";
-import maplibregl, { LngLatBounds, Map as MapLibreMap } from "maplibre-gl";
+import maplibregl, { Map as MapLibreMap } from "maplibre-gl";
 import { TerraDraw, TerraDrawPolygonMode } from "terra-draw";
 import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import { rasterService } from "../../Services/rasterService";
 import { useRasterStatus } from "../../hooks/useRasterStatus";
+import { useParcelIndices } from "../../hooks/useParcelIndices";
+import { getIndiceInfo, interpretIndiceValue } from "../../utils/indices";
 import type { DashboardParcel } from "../../types/dashboard";
 import type { GeoJsonGeometry } from "../../types/parcel";
 import type { RasterType } from "../../types/raster";
@@ -52,15 +54,13 @@ interface RasterTypeConfig {
   extraTileParams: string;
 }
 
-// Les 3 seuls types exposables en calque carte aujourd'hui côté backend
-// (voir types/raster.ts : les 11 autres indices n'existent qu'en
-// statistiques via indice_reading, pas en tuile).
-const RASTER_TYPES: RasterTypeConfig[] = [
-  { id: "mask", extraTileParams: "" },
+// Seule l'image satellite en couleurs réelles est affichée sur la carte.
+// L'image comporte 4 bandes : RGB + une bande alpha produite par la découpe
+// sur le polygone. `bidx=1,2,3,4` demande à titiler de renvoyer cette bande
+// alpha comme canal de transparence.
+export const RASTER_TYPES: RasterTypeConfig[] = [
   { id: "sentinel_rgb", extraTileParams: "" },
-  { id: "sentinel_ndvi", extraTileParams: "&rescale=-1,1&colormap_name=rdylgn" },
 ];
-
 type Bbox = [number, number, number, number];
 
 // ----------------------------------------------------------------------
@@ -78,6 +78,8 @@ export interface ParcelMapCardHandle {
   zoomOut: () => void;
   /** Centre la carte sur un point (utilisé après géocodage d'une adresse). */
   flyTo: (lon: number, lat: number, zoom?: number) => void;
+  /** Recadre la carte sur toutes les parcelles de la ferme affichée. */
+  fitToFarm: () => void;
 }
 
 interface ParcelMapCardProps {
@@ -91,6 +93,8 @@ interface ParcelMapCardProps {
   /** Notifie le parent à chaque changement du dessin en cours (pour que
    * MapToolbar sache afficher "Effacer" / "Enregistrer"). */
   onDrawChange: (hasDrawn: boolean) => void;
+  /** Indice affiché dans l'infobulle au survol ; null = pas d'infobulle. */
+  hoverIndice: string | null;
   /** Notifie le parent des rasters en cours de chargement (indicateur "…"). */
   onRasterLoadingChange?: (loading: Set<RasterType>) => void;
 }
@@ -139,7 +143,7 @@ function parcelsToFeatureCollection(parcels: DashboardParcel[]): GeoJSON.Feature
       .filter((p) => p.geometry != null)
       .map((p) => ({
         type: "Feature",
-        properties: { id: p.id, nom: p.nom },
+        properties: { id: p.id, nom: p.nom, active: p.status === "active" },
         geometry: p.geometry as unknown as GeoJSON.Geometry,
       })),
   };
@@ -152,14 +156,16 @@ function parcelsToFeatureCollection(parcels: DashboardParcel[]): GeoJSON.Feature
 const ParcelMapCard = forwardRef<ParcelMapCardHandle, ParcelMapCardProps>(
   function ParcelMapCard(
     {
+    
       parcelsForSelectedFarm,
       selectedParcel,
       onSelectParcel,
       baseMapKey,
       visibleRasterLayers,
+      hoverIndice,
       onDrawChange,
       onRasterLoadingChange,
-    },
+        },
     ref
   ) {
     const mapContainer = useRef<HTMLDivElement | null>(null);
@@ -170,6 +176,16 @@ const ParcelMapCard = forwardRef<ParcelMapCardHandle, ParcelMapCardProps>(
     const selectedParcelId = selectedParcel?.id ?? null;
     const { rasterStatus, readyTick } = useRasterStatus(selectedParcelId);
 
+    // Infobulle des indices au survol d'une parcelle
+    const parcelIndices = useParcelIndices();
+    const [hovered, setHovered] = useState<{ parcel: DashboardParcel; x: number; y: number } | null>(
+      null
+    );
+    // Référence lue dans les gestionnaires MapLibre, enregistrés une seule fois
+    const parcelsRef = useRef<DashboardParcel[]>(parcelsForSelectedFarm);
+    parcelsRef.current = parcelsForSelectedFarm;
+    const hoverIndiceRef = useRef<string | null>(hoverIndice);
+    hoverIndiceRef.current = hoverIndice;
     // ------------------------------------------------------------------
     // Initialisation de la carte (une seule fois)
     // ------------------------------------------------------------------
@@ -206,17 +222,24 @@ const ParcelMapCard = forwardRef<ParcelMapCardHandle, ParcelMapCardProps>(
           type: "geojson",
           data: { type: "FeatureCollection", features: [] },
         });
+        // Parcelle inactive : grisée, aucune analyse satellite
         map.addLayer({
           id: "farm-parcels-fill",
           type: "fill",
           source: "farm-parcels",
-          paint: { "fill-color": "#2563eb", "fill-opacity": 0.15 },
+          paint: {
+            "fill-color": ["case", ["get", "active"], "#2563eb", "#9ca3af"],
+            "fill-opacity": 0.15,
+          },
         });
         map.addLayer({
           id: "farm-parcels-outline",
           type: "line",
           source: "farm-parcels",
-          paint: { "line-color": "#2563eb", "line-width": 2 },
+          paint: {
+            "line-color": ["case", ["get", "active"], "#2563eb", "#9ca3af"],
+            "line-width": 2,
+          },
         });
 
         // Surlignage de la parcelle sélectionnée
@@ -240,8 +263,22 @@ const ParcelMapCard = forwardRef<ParcelMapCardHandle, ParcelMapCardProps>(
         map.on("mouseenter", "farm-parcels-fill", () => {
           map.getCanvas().style.cursor = "pointer";
         });
+
+        // Survol : infobulle avec les derniers indices de la parcelle
+        map.on("mousemove", "farm-parcels-fill", (e) => {
+          // Aucun indice choisi dans la barre d'outils : pas d'infobulle
+          if (!hoverIndiceRef.current) return;
+          const id = e.features?.[0]?.properties?.id;
+          if (typeof id !== "number") return;
+          const parcel = parcelsRef.current.find((p) => p.id === id);
+          if (!parcel) return;
+          if (parcel.status === "active") parcelIndices.load(id);
+          setHovered({ parcel, x: e.point.x, y: e.point.y });
+        });
+
         map.on("mouseleave", "farm-parcels-fill", () => {
           map.getCanvas().style.cursor = "";
+          setHovered(null);
         });
 
         // Dessin (TerraDraw)
@@ -354,11 +391,8 @@ const ParcelMapCard = forwardRef<ParcelMapCardHandle, ParcelMapCardProps>(
         { padding: 80, duration: 800, maxZoom: 17 }
       );
     }, [selectedParcel, mapReady]);
-
-    // ------------------------------------------------------------------
-    // Rasters de la parcelle sélectionnée
-    // ------------------------------------------------------------------
-    const loadRasterLayer = useCallback(
+    
+        const loadRasterLayer = useCallback(
       async (config: RasterTypeConfig, parcelId: number) => {
         const map = mapRef.current;
         if (!map) return;
@@ -369,22 +403,33 @@ const ParcelMapCard = forwardRef<ParcelMapCardHandle, ParcelMapCardProps>(
         if (!signed.url) return;
 
         const tileUrl = buildTileUrl(signed.url, config.extraTileParams);
-        if (map.getSource(config.id)) {
-          map.removeLayer(config.id);
-          map.removeSource(config.id);
+
+        const addLayer = () => {
+          // La carte a pu être démontée pendant l'attente du style
+          if (!mapRef.current) return;
+          if (map.getLayer(config.id)) map.removeLayer(config.id);
+          if (map.getSource(config.id)) map.removeSource(config.id);
+          map.addSource(config.id, {
+            type: "raster",
+            tiles: [tileUrl],
+            tileSize: 256,
+            ...(signed.bbox ? { bounds: signed.bbox } : {}),
+          });
+          map.addLayer({
+            id: config.id,
+            type: "raster",
+            source: config.id,
+            paint: { "raster-opacity": 0.85 },
+          });
+        };
+
+        // Le style peut être en cours de rechargement (changement de fond de
+        // carte) : MapLibre refuse alors addSource. On attend qu'il soit prêt.
+        if (map.isStyleLoaded()) {
+          addLayer();
+        } else {
+          map.once("idle", addLayer);
         }
-        map.addSource(config.id, {
-          type: "raster",
-          tiles: [tileUrl],
-          tileSize: 256,
-          ...(signed.bbox ? { bounds: signed.bbox } : {}),
-        });
-        map.addLayer({
-          id: config.id,
-          type: "raster",
-          source: config.id,
-          paint: { "raster-opacity": 0.85 },
-        });
       },
       []
     );
@@ -392,6 +437,8 @@ const ParcelMapCard = forwardRef<ParcelMapCardHandle, ParcelMapCardProps>(
     useEffect(() => {
       const map = mapRef.current;
       if (!map || !mapReady || !selectedParcelId) return;
+      // Parcelle inactive : aucune image satellite n'existe (raster_status "none")
+      if (selectedParcel?.status !== "active") return;
       // Tant que le traitement est en cours, inutile de demander l'URL :
       // elle sera absente. On attend readyTick (déclenché par
       // useRasterStatus quand "pending" bascule vers "ready"/"failed").
@@ -409,7 +456,7 @@ const ParcelMapCard = forwardRef<ParcelMapCardHandle, ParcelMapCardProps>(
         }
       })();
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedParcelId, mapReady, visibleRasterLayers, rasterStatus, readyTick]);
+    }, [selectedParcelId, selectedParcel?.status, mapReady, visibleRasterLayers, rasterStatus, readyTick]);
 
     // Visibilité des calques déjà chargés (sans refaire d'appel réseau)
     useEffect(() => {
@@ -461,13 +508,130 @@ const ParcelMapCard = forwardRef<ParcelMapCardHandle, ParcelMapCardProps>(
         flyTo: (lon: number, lat: number, zoom = 14) => {
           mapRef.current?.flyTo({ center: [lon, lat], zoom, duration: 1000 });
         },
+        fitToFarm: () => {
+          const map = mapRef.current;
+          if (!map) return;
+          const all = parcelsRef.current
+            .map((p) => getBboxFromGeometry(p.geometry))
+            .filter((b): b is Bbox => b !== null);
+          if (all.length === 0) return;
+          const bbox: Bbox = [
+            Math.min(...all.map((b) => b[0])),
+            Math.min(...all.map((b) => b[1])),
+            Math.max(...all.map((b) => b[2])),
+            Math.max(...all.map((b) => b[3])),
+          ];
+          map.fitBounds(
+            [
+              [bbox[0], bbox[1]],
+              [bbox[2], bbox[3]],
+            ],
+            { padding: 60, duration: 800, maxZoom: 16 }
+          );
+        },
       }),
       [onDrawChange]
     );
 
-    return <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />;
+    
+        // L'infobulle disparaît si l'indice suivi est désactivé
+    useEffect(() => {
+      if (!hoverIndice) setHovered(null);
+    }, [hoverIndice]);
+
+    const hoveredSummary = parcelIndices.get(hovered?.parcel.id ?? null);
+    const hoveredReading = hoverIndice
+      ? hoveredSummary.readings.find(
+          (r) => r.indice_name.toUpperCase() === hoverIndice.toUpperCase()
+        ) ?? null
+      : null;
+    const hoveredInfo = hoverIndice ? getIndiceInfo(hoverIndice) : null;
+    const hoveredInterpretation = hoverIndice
+      ? interpretIndiceValue(hoverIndice, hoveredReading?.value ?? null)
+      : null;
+
+    return (
+      <div style={{ position: "relative", width: "100%", height: "100%" }}>
+        <div ref={mapContainer} style={{ width: "100%", height: "100%" }} />
+
+        {hovered && (
+          <div
+            style={{
+              position: "absolute",
+              left: Math.min(hovered.x + 14, 9999),
+              top: hovered.y + 14,
+              maxWidth: 240,
+              background: "rgba(17,24,39,0.92)",
+              color: "#ffffff",
+              borderRadius: 8,
+              padding: "9px 11px",
+              fontFamily: "system-ui, sans-serif",
+              fontSize: 12,
+              pointerEvents: "none",
+              zIndex: 6,
+              boxShadow: "0 4px 14px rgba(0,0,0,0.3)",
+            }}
+          >
+            <div style={{ fontWeight: 600, marginBottom: 2 }}>{hovered.parcel.nom}</div>
+            <div style={{ opacity: 0.7, marginBottom: 6 }}>
+              {hovered.parcel.culture_type || "Sans culture"} ·{" "}
+              {hovered.parcel.surface_ha.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} ha
+            </div>
+
+                          {hovered.parcel.status !== "active" ? (
+              <div style={{ opacity: 0.75 }}>Parcelle inactive — pas d'analyse satellite</div>
+            ) : hoveredSummary.loading ? (
+              <div style={{ opacity: 0.75 }}>Chargement…</div>
+            ) : !hoveredReading || hoveredReading.value == null ? (
+              <div style={{ opacity: 0.75 }}>
+                {hoverIndice} non disponible pour cette parcelle
+              </div>
+            ) : (
+              <>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
+                  <span style={{ opacity: 0.75 }}>{hoverIndice}</span>
+                  <span style={{ fontSize: 17, fontWeight: 700 }}>
+                    {hoveredReading.value.toFixed(3)}
+                  </span>
+                </div>
+
+                {hoveredInterpretation && (
+                  <div
+                    style={{
+                      marginTop: 4,
+                      display: "inline-block",
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color: hoveredInterpretation.color,
+                      border: `1px solid ${hoveredInterpretation.color}`,
+                      borderRadius: 999,
+                      padding: "1px 7px",
+                    }}
+                  >
+                    {hoveredInterpretation.label}
+                  </div>
+                )}
+
+                {hoveredInfo?.healthy && (
+                  <div style={{ opacity: 0.6, marginTop: 4, fontSize: 10 }}>
+                    Bonne santé : {hoveredInfo.healthy[0].toLocaleString("fr-FR")} à{" "}
+                    {hoveredInfo.healthy[1].toLocaleString("fr-FR")}
+                  </div>
+                )}
+
+                {hoveredSummary.sceneDate && (
+                  <div style={{ opacity: 0.6, marginTop: 4, fontSize: 10 }}>
+                    Image du {new Date(hoveredSummary.sceneDate).toLocaleDateString("fr-FR")}
+                  </div>
+                )}
+              </>
+            )}
+              
+          </div>
+        )}
+      </div>
+    );
   }
 );
 
 export default ParcelMapCard;
-export { RASTER_TYPES };

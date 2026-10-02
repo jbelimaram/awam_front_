@@ -39,3 +39,50 @@
   width: 100%;
   max-width: 1200px;
 }
+
+/* ----------------------------------------------------------------------
+   Lisibilité : les cartes reprennent la palette claire définie ci-dessus
+   (--fond-carte, --texte-principal) au lieu du blanc translucide, qui se
+   confondait avec l'image de fond.
+   ---------------------------------------------------------------------- */
+
+.profile-page .bg-white\/10 {
+  background-color: var(--fond-carte) !important;
+}
+
+.profile-page .border-white\/20 {
+  border-color: var(--bordure) !important;
+}
+
+/* Textes : foncés sur fond clair */
+.profile-page .text-white,
+.profile-page .text-white\/70,
+.profile-page .text-white\/60 {
+  color: var(--texte-principal) !important;
+}
+
+.profile-page .text-white\/60,
+.profile-page .text-white\/70 {
+  color: var(--texte-secondaire) !important;
+}
+
+/* Champs de saisie : fond subtil, texte foncé */
+.profile-page input,
+.profile-page textarea,
+.profile-page select {
+  background-color: var(--fond-page) !important;
+  border-color: var(--bordure) !important;
+  color: var(--texte-principal) !important;
+}
+
+.profile-page input::placeholder,
+.profile-page textarea::placeholder {
+  color: var(--texte-secondaire) !important;
+}
+
+/* Séparateurs et traits */
+.profile-page .bg-white\/20,
+.profile-page .divide-white\/10 > * + * {
+  background-color: var(--bordure) !important;
+  border-color: var(--bordure) !important;
+}

@@ -1,95 +1,264 @@
-import { useEffect, useState } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { useEffect, useMemo, useState } from "react";
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ReferenceArea,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { useSelection } from "../../hooks/useSelection";
 import { useIndiceSeries } from "../../hooks/useIndiceSeries";
-import { interpretIndiceValue } from "../../utils/indices";
+import { INDICE_CATALOG, getIndiceInfo, interpretIndiceValue } from "../../utils/indices";
+
+const shortDate = (iso: string) =>
+  new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
 
 export default function IndicesChartCard() {
-  const { selectedParcelId } = useSelection();
+  const { selectedParcelId, selectedParcel } = useSelection();
   const [selectedIndice, setSelectedIndice] = useState<string | null>(null);
   const { readings, availableIndices, loading } = useIndiceSeries(selectedParcelId, selectedIndice);
 
+  // Sélection par défaut : NDVI s'il est disponible, sinon le premier indice
   useEffect(() => {
-    if (availableIndices.length > 0 && !availableIndices.includes(selectedIndice ?? "")) {
-      setSelectedIndice(availableIndices[0]);
-    }
     if (availableIndices.length === 0) {
       setSelectedIndice(null);
+      return;
+    }
+    if (!selectedIndice || !availableIndices.includes(selectedIndice)) {
+      setSelectedIndice(availableIndices.includes("NDVI") ? "NDVI" : availableIndices[0]);
     }
   }, [availableIndices, selectedIndice]);
 
-  const chartData = readings
-    .filter((r) => r.scene_date !== null && r.value !== null)
-    .map((r) => ({ date: r.scene_date as string, value: r.value as number }));
+  const info = selectedIndice ? getIndiceInfo(selectedIndice) : null;
 
-  const latest = readings[readings.length - 1] ?? null;
-  const interpretation = latest ? interpretIndiceValue(selectedIndice ?? "", latest.value) : null;
+  const chartData = useMemo(
+    () =>
+      readings
+        .filter((r) => r.scene_date && r.value != null)
+        .map((r) => ({
+          date: r.scene_date as string,
+          label: shortDate(r.scene_date as string),
+          value: r.value as number,
+        })),
+    [readings]
+  );
+
+  const last = chartData[chartData.length - 1] ?? null;
+  const previous = chartData[chartData.length - 2] ?? null;
+  const delta = last && previous ? last.value - previous.value : null;
+  const interpretation = selectedIndice ? interpretIndiceValue(selectedIndice, last?.value ?? null) : null;
+
+  // Échelle resserrée sur les données et l'intervalle de santé, pour une courbe lisible
+  const domain = useMemo<[number, number]>(() => {
+    const values = chartData.map((d) => d.value);
+    if (info?.healthy) values.push(...info.healthy);
+    if (values.length === 0) return info?.range ?? [-1, 1];
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const pad = Math.max((max - min) * 0.25, 0.05);
+    const [rMin, rMax] = info?.range ?? [-1, 1];
+    return [Math.max(rMin, min - pad), Math.min(rMax, max + pad)];
+  }, [chartData, info]);
 
   if (!selectedParcelId) {
     return (
-      <div style={{ fontFamily: "system-ui, sans-serif", fontSize: 13, color: "#666" }}>
-        Sélectionne une parcelle pour voir ses indices.
+      <div style={{ fontFamily: "system-ui, sans-serif", fontSize: 13, color: "#6b7280" }}>
+        Sélectionnez une parcelle pour voir ses indices.
+      </div>
+    );
+  }
+
+  if (selectedParcel?.status !== "active") {
+    return (
+      <div style={{ fontFamily: "system-ui, sans-serif", fontSize: 13, color: "#6b7280" }}>
+        Parcelle inactive : aucune analyse satellite n'est effectuée.
       </div>
     );
   }
 
   return (
-    <div style={{ fontFamily: "system-ui, sans-serif", fontSize: 13 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-        <strong>Indices de végétation</strong>
-        <select
-          value={selectedIndice ?? ""}
-          onChange={(e) => setSelectedIndice(e.target.value || null)}
-          style={{ padding: "4px 6px", borderRadius: 6, border: "1px solid #ddd", fontSize: 12 }}
-        >
-          {availableIndices.length === 0 && <option value="">Aucun indice</option>}
-          {availableIndices.map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-        </select>
+    <div style={{ fontFamily: "system-ui, sans-serif", display: "flex", gap: 12, height: "100%", minHeight: 0 }}>
+      {/* ---- Graphique ---- */}
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 2 }}>
+          <strong style={{ fontSize: 14, color: "#111827" }}>
+            {selectedIndice ?? "Indices"}
+          </strong>
+          {last && (
+            <span style={{ fontSize: 11, color: "#6b7280" }}>
+              {new Date(last.date).toLocaleDateString("fr-FR")}
+            </span>
+          )}
+        </div>
+
+        {info && (
+          <p style={{ fontSize: 11, color: "#6b7280", margin: "0 0 8px", lineHeight: 1.35 }}>
+            {info.description}
+          </p>
+        )}
+
+        {loading && <p style={{ fontSize: 13, color: "#6b7280" }}>Chargement…</p>}
+
+        {!loading && chartData.length === 0 && (
+          <p style={{ fontSize: 13, color: "#6b7280" }}>
+            Aucune mesure disponible pour cet indice.
+          </p>
+        )}
+
+        {!loading && chartData.length > 0 && (
+          <>
+            <div style={{ flex: 1, minHeight: 150 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 6, right: 10, bottom: 2, left: -18 }}>
+                  <CartesianGrid stroke="#eef0f2" vertical={false} />
+
+                  {/* Zone et bornes de l'intervalle de bonne santé */}
+                  {info?.healthy && (
+                    <>
+                      <ReferenceArea
+                        y1={info.healthy[0]}
+                        y2={info.healthy[1]}
+                        fill="#16a34a"
+                        fillOpacity={0.08}
+                      />
+                      <ReferenceLine y={info.healthy[0]} stroke="#16a34a" strokeDasharray="4 3" strokeOpacity={0.6} />
+                      <ReferenceLine y={info.healthy[1]} stroke="#16a34a" strokeDasharray="4 3" strokeOpacity={0.6} />
+                    </>
+                  )}
+
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 10, fill: "#6b7280" }}
+                    tickLine={false}
+                    axisLine={{ stroke: "#e5e7eb" }}
+                    minTickGap={18}
+                  />
+                  <YAxis
+                    domain={domain}
+                    tick={{ fontSize: 10, fill: "#6b7280" }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={44}
+                    tickFormatter={(v: number) => v.toFixed(2)}
+                  />
+                  <Tooltip
+                    contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb" }}
+                    labelFormatter={(_, payload) =>
+                      payload?.[0]?.payload?.date
+                        ? new Date(payload[0].payload.date).toLocaleDateString("fr-FR")
+                        : ""
+                    }
+                    formatter={(v: number) => [v.toFixed(3), selectedIndice ?? ""]}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#1b4332"
+                    strokeWidth={2}
+                    dot={{ r: 2.5, fill: "#1b4332" }}
+                    activeDot={{ r: 4.5 }}
+                    isAnimationActive={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* ---- Dernière valeur + interprétation ---- */}
+            {last && (
+              <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>
+                  {last.value.toFixed(3)}
+                </span>
+
+                {delta !== null && (
+                  <span style={{ fontSize: 11, color: delta >= 0 ? "#15803d" : "#b42318" }}>
+                    {delta >= 0 ? "▲" : "▼"} {Math.abs(delta).toFixed(3)}
+                  </span>
+                )}
+
+                {interpretation && (
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: interpretation.color,
+                      border: `1px solid ${interpretation.color}`,
+                      borderRadius: 999,
+                      padding: "2px 9px",
+                    }}
+                  >
+                    {interpretation.label}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {info?.healthy ? (
+              <p style={{ fontSize: 10, color: "#6b7280", margin: "5px 0 0" }}>
+                Zone verte : bonne santé, de {info.healthy[0].toLocaleString("fr-FR")} à{" "}
+                {info.healthy[1].toLocaleString("fr-FR")}.
+              </p>
+            ) : (
+              <p style={{ fontSize: 10, color: "#6b7280", margin: "5px 0 0" }}>
+                {info?.notes?.[0] ?? "Pas d'intervalle de référence pour cet indice."}
+              </p>
+            )}
+          </>
+        )}
       </div>
 
-      {loading && <p style={{ color: "#666" }}>Chargement…</p>}
+      {/* ---- Liste des indices, à droite ---- */}
+      <div
+        style={{
+          width: 86,
+          flexShrink: 0,
+          borderLeft: "1px solid #e5e7eb",
+          paddingLeft: 8,
+          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+        }}
+      >
+        {availableIndices.length === 0 && (
+          <span style={{ fontSize: 10, color: "#6b7280" }}>Aucun indice</span>
+        )}
 
-      {!loading && chartData.length === 0 && (
-        <p style={{ color: "#666" }}>Aucune donnée disponible pour cet indice.</p>
-      )}
-
-      {!loading && chartData.length > 0 && (
-        <>
-          <div style={{ width: "100%", height: 160 }}>
-            <ResponsiveContainer>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} domain={[-1, 1]} />
-                <Tooltip />
-                <Line type="monotone" dataKey="value" stroke="#16a34a" strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          {latest && interpretation && (
-            <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontWeight: 700 }}>{latest.value?.toFixed(3)}</span>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: interpretation.color,
-                  border: `1px solid ${interpretation.color}`,
-                  borderRadius: 999,
-                  padding: "2px 8px",
-                }}
-              >
-                {interpretation.label}
-              </span>
-            </div>
-          )}
-        </>
-      )}
+        {availableIndices.map((name) => {
+          const isActive = name === selectedIndice;
+          const hasRange = Boolean(INDICE_CATALOG[name.toUpperCase()]?.healthy);
+          return (
+            <button
+              key={name}
+              type="button"
+              onClick={() => setSelectedIndice(name)}
+              title={getIndiceInfo(name)?.fullName ?? name}
+              style={{
+                padding: "5px 7px",
+                borderRadius: 6,
+                border: `1px solid ${isActive ? "#1b4332" : "#e5e7eb"}`,
+                background: isActive ? "#1b4332" : "#ffffff",
+                color: isActive ? "#ffffff" : "#374151",
+                fontSize: 10,
+                fontWeight: 600,
+                cursor: "pointer",
+                textAlign: "left",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 4,
+              }}
+            >
+              <span>{name}</span>
+              {!hasRange && <span style={{ opacity: 0.5, fontSize: 9 }}>—</span>}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
