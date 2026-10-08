@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useSelection } from "../../hooks/useSelection";
 
@@ -17,7 +16,7 @@ export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { farms, selectedFarmId, selectFarm, parcels, loadingFarms } = useSelection();
-  const [section, setSection] = useState<"dashboard" | "parcelles">("dashboard");
+  const location = useLocation();
 
   const handleLogout = async () => {
     await logout();
@@ -83,13 +82,23 @@ export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps
       </div>
 
       <nav style={{ display: "flex", flexDirection: "column", gap: 4, padding: "12px 8px" }}>
-        <button type="button" style={itemStyle(section === "dashboard")} onClick={() => setSection("dashboard")} title="Page principale">
+        <button
+          type="button"
+          style={itemStyle(location.pathname === "/")}
+          onClick={() => navigate("/")}
+          title="Page principale"
+        >
           <span style={{ fontSize: 17 }}>📊</span>
           {!collapsed && <span>Page principale</span>}
         </button>
-        <button type="button" style={itemStyle(section === "parcelles")} onClick={() => setSection("parcelles")} title="Gestion de parcelle">
-          <span style={{ fontSize: 17 }}>🗺️</span>
-          {!collapsed && <span>Gestion de parcelle</span>}
+        <button
+          type="button"
+          style={itemStyle(location.pathname === "/cultures")}
+          onClick={() => navigate("/cultures")}
+          title="Cultures"
+        >
+          <span style={{ fontSize: 17 }}>🌿</span>
+          {!collapsed && <span>Cultures</span>}
         </button>
       </nav>
 
