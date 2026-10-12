@@ -3,8 +3,6 @@ import {
   CartesianGrid,
   Line,
   LineChart,
-  ReferenceArea,
-  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -12,7 +10,8 @@ import {
 } from "recharts";
 import { useSelection } from "../../hooks/useSelection";
 import { useIndiceSeries } from "../../hooks/useIndiceSeries";
-import { INDICE_CATALOG, getIndiceInfo, interpretIndiceValue } from "../../utils/indices";
+import { useCropDiagnosis } from "../../hooks/useCropDiagnosis";
+import { INDICE_CATALOG, LEVEL_STYLE, getIndiceInfo, referenceLabel } from "../../utils/indices";
 
 const shortDate = (iso: string) =>
   new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
@@ -21,6 +20,7 @@ export default function IndicesChartCard() {
   const { selectedParcelId, selectedParcel } = useSelection();
   const [selectedIndice, setSelectedIndice] = useState<string | null>(null);
   const { readings, availableIndices, loading } = useIndiceSeries(selectedParcelId, selectedIndice);
+  const { items: diagnoses, activeCrops, loading: diagnosisLoading } = useCropDiagnosis(selectedParcelId);
 
   // Sélection par défaut : NDVI s'il est disponible, sinon le premier indice
   useEffect(() => {
@@ -50,12 +50,24 @@ export default function IndicesChartCard() {
   const last = chartData[chartData.length - 1] ?? null;
   const previous = chartData[chartData.length - 2] ?? null;
   const delta = last && previous ? last.value - previous.value : null;
-  const interpretation = selectedIndice ? interpretIndiceValue(selectedIndice, last?.value ?? null) : null;
 
-  // Échelle resserrée sur les données et l'intervalle de santé, pour une courbe lisible
+  // Verdicts du diagnostic par culture pour l'indice affiché : seuils de
+  // l'agronome, par culture, stade et âge. Le dashboard n'en calcule aucun.
+  const cropVerdicts = useMemo(
+    () =>
+      selectedIndice
+        ? diagnoses.flatMap(({ crop, diagnosis }) =>
+            diagnosis.indicators
+              .filter((i) => i.name.toUpperCase() === selectedIndice.toUpperCase())
+              .map((indicator) => ({ crop, diagnosis, indicator }))
+          )
+        : [],
+    [diagnoses, selectedIndice]
+  );
+
+  // Échelle resserrée sur les données, pour une courbe lisible
   const domain = useMemo<[number, number]>(() => {
     const values = chartData.map((d) => d.value);
-    if (info?.healthy) values.push(...info.healthy);
     if (values.length === 0) return info?.range ?? [-1, 1];
     const min = Math.min(...values);
     const max = Math.max(...values);
@@ -116,20 +128,6 @@ export default function IndicesChartCard() {
                 <LineChart data={chartData} margin={{ top: 6, right: 10, bottom: 2, left: -18 }}>
                   <CartesianGrid stroke="#eef0f2" vertical={false} />
 
-                  {/* Zone et bornes de l'intervalle de bonne santé */}
-                  {info?.healthy && (
-                    <>
-                      <ReferenceArea
-                        y1={info.healthy[0]}
-                        y2={info.healthy[1]}
-                        fill="#16a34a"
-                        fillOpacity={0.08}
-                      />
-                      <ReferenceLine y={info.healthy[0]} stroke="#16a34a" strokeDasharray="4 3" strokeOpacity={0.6} />
-                      <ReferenceLine y={info.healthy[1]} stroke="#16a34a" strokeDasharray="4 3" strokeOpacity={0.6} />
-                    </>
-                  )}
-
                   <XAxis
                     dataKey="label"
                     tick={{ fontSize: 10, fill: "#6b7280" }}
@@ -167,7 +165,7 @@ export default function IndicesChartCard() {
               </ResponsiveContainer>
             </div>
 
-            {/* ---- Dernière valeur + interprétation ---- */}
+            {/* ---- Dernière valeur ---- */}
             {last && (
               <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>
@@ -179,34 +177,56 @@ export default function IndicesChartCard() {
                     {delta >= 0 ? "▲" : "▼"} {Math.abs(delta).toFixed(3)}
                   </span>
                 )}
-
-                {interpretation && (
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: interpretation.color,
-                      border: `1px solid ${interpretation.color}`,
-                      borderRadius: 999,
-                      padding: "2px 9px",
-                    }}
-                  >
-                    {interpretation.label}
-                  </span>
-                )}
               </div>
             )}
 
-            {info?.healthy ? (
-              <p style={{ fontSize: 10, color: "#6b7280", margin: "5px 0 0" }}>
-                Zone verte : bonne santé, de {info.healthy[0].toLocaleString("fr-FR")} à{" "}
-                {info.healthy[1].toLocaleString("fr-FR")}.
-              </p>
-            ) : (
-              <p style={{ fontSize: 10, color: "#6b7280", margin: "5px 0 0" }}>
-                {info?.notes?.[0] ?? "Pas d'intervalle de référence pour cet indice."}
-              </p>
-            )}
+            {/* ---- Verdict du diagnostic par culture ---- */}
+            <div style={{ marginTop: 5, display: "flex", flexDirection: "column", gap: 3 }}>
+              {diagnosisLoading ? (
+                <span style={{ fontSize: 10, color: "#6b7280" }}>Diagnostic en cours…</span>
+              ) : activeCrops === 0 ? (
+                <span style={{ fontSize: 10, color: "#6b7280" }}>
+                  Aucune culture déclarée : pas de verdict, seulement un repère général.
+                </span>
+              ) : cropVerdicts.length === 0 ? (
+                <span style={{ fontSize: 10, color: "#6b7280" }}>
+                  Indice non suivi par le diagnostic au stade actuel des cultures.
+                </span>
+              ) : (
+                cropVerdicts.map(({ crop, diagnosis, indicator }) => {
+                  const style = LEVEL_STYLE[indicator.level];
+                  return (
+                    <div
+                      key={crop.id}
+                      style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 10 }}
+                    >
+                      <span style={{ color: "#374151", fontWeight: 600 }}>
+                        {crop.species_label ?? crop.species} · {diagnosis.stage.label}
+                      </span>
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          color: style.color,
+                          background: style.bg,
+                          border: `1px solid ${style.color}`,
+                          borderRadius: 999,
+                          padding: "1px 8px",
+                        }}
+                      >
+                        {style.label}
+                      </span>
+                      {indicator.threshold_label && (
+                        <span style={{ color: "#6b7280" }}>{indicator.threshold_label}</span>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <p style={{ fontSize: 10, color: "#9ca3af", margin: "4px 0 0" }}>
+              {referenceLabel(info) ?? info?.notes?.[0] ?? "Pas de repère général pour cet indice."}
+            </p>
           </>
         )}
       </div>
@@ -230,7 +250,7 @@ export default function IndicesChartCard() {
 
         {availableIndices.map((name) => {
           const isActive = name === selectedIndice;
-          const hasRange = Boolean(INDICE_CATALOG[name.toUpperCase()]?.healthy);
+          const hasReference = Boolean(INDICE_CATALOG[name.toUpperCase()]?.reference);
           return (
             <button
               key={name}
@@ -254,7 +274,7 @@ export default function IndicesChartCard() {
               }}
             >
               <span>{name}</span>
-              {!hasRange && <span style={{ opacity: 0.5, fontSize: 9 }}>—</span>}
+              {!hasReference && <span style={{ opacity: 0.5, fontSize: 9 }}>—</span>}
             </button>
           );
         })}
