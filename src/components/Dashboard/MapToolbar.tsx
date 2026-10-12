@@ -1,8 +1,8 @@
 import { RefObject, useRef, useState } from "react";
-import type { ParcelMapCardHandle, BaseMapKey } from "./ParcelMapCard";
-import { BASE_MAPS } from "./ParcelMapCard";
+import type { ParcelMapCardHandle, BaseMapKey } from "./ParcelMapCard.tsx";
+import { BASE_MAPS } from "./ParcelMapCard.tsx";
 import { geocodeSearch, type GeocodingResult } from "../../utils/geocode";
-import { INDICE_CATALOG, getIndiceInfo } from "../../utils/indices";
+import { INDICE_CATALOG, getIndiceInfo, referenceLabel } from "../../utils/indices";
 
 const BASE_MAP_LABELS: Record<BaseMapKey, { label: string; icon: string }> = {
   satellite: { label: "Satellite", icon: "🛰️" },
@@ -495,10 +495,13 @@ export default function MapToolbar({
 
           <p style={{ margin: "7px 0 0" }}>{info.description}</p>
 
-          {info.healthy && (
-            <p style={{ margin: "6px 0 0", color: "#15803d", fontWeight: 600 }}>
-              Bonne santé : {info.healthy[0].toLocaleString("fr-FR")} à{" "}
-              {info.healthy[1].toLocaleString("fr-FR")}
+          <p style={{ margin: "6px 0 0", fontSize: 10, color: "#9ca3af" }}>
+            Formule : {info.formula}
+          </p>
+
+          {referenceLabel(info) && (
+            <p style={{ margin: "6px 0 0", color: "#374151", fontWeight: 600 }}>
+              {referenceLabel(info)}
             </p>
           )}
 

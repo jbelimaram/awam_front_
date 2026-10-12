@@ -3,8 +3,9 @@
  *   low    — sous l'intervalle attendu (anomalie à vérifier)
  *   normal — dans l'intervalle attendu
  *   high   — au-dessus : développement excellent (pas une alerte)
+ *   info   — affiché sans verdict (seuil en attente de clarification)
  */
-export type Level = "low" | "normal" | "high";
+export type Level = "low" | "normal" | "high" | "info";
 
 /** Niveaux des références de sol (inchangés). */
 export type SoilLevel = "green" | "yellow" | "red";

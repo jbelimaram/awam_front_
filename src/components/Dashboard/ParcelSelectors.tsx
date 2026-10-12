@@ -1,42 +1,20 @@
 import { useSelection } from "../../hooks/useSelection";
 
-interface ParcelSelectorsProps {
-  onAddParcel: () => void;
-  canAddParcel: boolean;
-}
-
 /**
- * Liste des parcelles de la ferme sélectionnée, avec le bouton « + »
- * qui lance le dessin d'une nouvelle parcelle sur la carte.
+ * Liste des parcelles de la ferme sélectionnée.
+ *
+ * Pour créer une parcelle, on utilise le crayon ✏️ de la carte : il
+ * ouvre directement le dessin du contour, ce qui rendait inutile un
+ * second bouton ici.
  */
-export default function ParcelSelectors({ onAddParcel, canAddParcel }: ParcelSelectorsProps) {
+export default function ParcelSelectors() {
   const { selectedParcelId, parcelsForSelectedFarm, selectParcel, loadingParcels, selectedFarmId } =
     useSelection();
 
   return (
     <div style={{ fontFamily: "system-ui, sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+      <div style={{ marginBottom: 8 }}>
         <strong style={{ fontSize: 14, color: "#111827" }}>Parcelles</strong>
-        <button
-          type="button"
-          onClick={onAddParcel}
-          disabled={!canAddParcel}
-          title={canAddParcel ? "Dessiner une nouvelle parcelle" : "Sélectionnez d'abord une ferme"}
-          style={{
-            width: 26,
-            height: 26,
-            borderRadius: 6,
-            border: "1px solid #cbd5e1",
-            background: "#ffffff",
-            color: "#1b4332",
-            fontSize: 16,
-            lineHeight: 1,
-            cursor: canAddParcel ? "pointer" : "not-allowed",
-            opacity: canAddParcel ? 1 : 0.45,
-          }}
-        >
-          ＋
-        </button>
       </div>
 
       {loadingParcels && <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>Chargement…</p>}
@@ -47,11 +25,11 @@ export default function ParcelSelectors({ onAddParcel, canAddParcel }: ParcelSel
 
       {!loadingParcels && selectedFarmId !== null && parcelsForSelectedFarm.length === 0 && (
         <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
-          Aucune parcelle. Utilisez « ＋ » pour en dessiner une.
+          Aucune parcelle. Utilisez le crayon ✏️ de la carte pour en dessiner une.
         </p>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: 200, overflowY: "auto" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: 200, overflowY: "auto", paddingRight: 4 }}>
         {parcelsForSelectedFarm.map((p) => {
           const isActive = p.id === selectedParcelId;
           return (

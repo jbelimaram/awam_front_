@@ -57,10 +57,6 @@ function DashboardContent({ showFarmForm, onCloseFarmForm }: DashboardContentPro
   const [hoverIndice, setHoverIndice] = useState<string | null>(null);
 
   // « ＋ » de la liste des parcelles : passe la carte en mode dessin
-  const handleStartDrawing = () => {
-    mapRef.current?.startDrawing();
-  };
-
   const handleRequestSave = () => {
     const geometry = mapRef.current?.getDrawnGeometry() ?? null;
     if (!geometry) {
@@ -107,10 +103,7 @@ function DashboardContent({ showFarmForm, onCloseFarmForm }: DashboardContentPro
           }}
         >
           <div style={cardStyle}>
-            <ParcelSelectors
-              onAddParcel={handleStartDrawing}
-              canAddParcel={selectedFarmId !== null}
-            />
+            <ParcelSelectors />
           </div>
           <div style={cardStyle}>
             <ParcelInfoCard />

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useSelection } from "../../hooks/useSelection";
@@ -9,18 +10,41 @@ interface SidebarProps {
 }
 
 /**
- * Colonne de navigation : logo, sections du dashboard, liste des fermes
- * (avec « + » pour en créer une) et déconnexion.
+ * Colonne de navigation : logo, « Fermes » (page principale, avec la
+ * liste repliable des fermes et l'ajout), « Cultures », et déconnexion.
  */
 export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout } = useAuth();
   const { farms, selectedFarmId, selectFarm, parcels, loadingFarms } = useSelection();
-  const location = useLocation();
+
+  // Groupe « Fermes » déplié par défaut : la ferme sélectionnée reste visible
+  const [farmsOpen, setFarmsOpen] = useState(true);
 
   const handleLogout = async () => {
     await logout();
     navigate("/login", { replace: true });
+  };
+
+  // « Fermes » remplace l'ancienne « Page principale » : même page (/)
+  const onFarmsPage = location.pathname === "/";
+
+  /**
+   * Clic sur « Fermes » :
+   * - depuis une autre page, ouvre la page des fermes, liste dépliée ;
+   * - sur la page des fermes, déplie ou replie la liste.
+   * Barre réduite en icônes : on l'élargit d'abord, sinon les noms des
+   * fermes resteraient invisibles.
+   */
+  const handleFarmsClick = () => {
+    if (collapsed) onToggle();
+    if (!onFarmsPage) {
+      navigate("/");
+      setFarmsOpen(true);
+      return;
+    }
+    setFarmsOpen((open) => (collapsed ? true : !open));
   };
 
   const itemStyle = (active: boolean): React.CSSProperties => ({
@@ -38,6 +62,15 @@ export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps
     textAlign: "left",
     width: "100%",
   });
+
+  /** Ferme de la liste : décalée sous l'entrée « Fermes ». */
+  const subItemStyle = (active: boolean): React.CSSProperties => ({
+    ...itemStyle(active),
+    padding: "7px 12px 7px 38px",
+    fontSize: 13,
+  });
+
+  const showFarms = farmsOpen && !collapsed;
 
   return (
     <aside
@@ -81,16 +114,73 @@ export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps
         </button>
       </div>
 
-      <nav style={{ display: "flex", flexDirection: "column", gap: 4, padding: "12px 8px" }}>
+      {/* Menu : défile si la liste des fermes devient longue */}
+      <nav
+        className="scrollbar-hidden"
+        style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4, padding: "12px 8px" }}
+      >
+        {/* ---- Fermes : page principale + liste repliable ---- */}
         <button
           type="button"
-          style={itemStyle(location.pathname === "/")}
-          onClick={() => navigate("/")}
-          title="Page principale"
+          style={itemStyle(onFarmsPage)}
+          onClick={handleFarmsClick}
+          title="Fermes"
+          aria-expanded={showFarms}
         >
-          <span style={{ fontSize: 17 }}>📊</span>
-          {!collapsed && <span>Page principale</span>}
+          <span style={{ fontSize: 17 }}>🌱</span>
+          {!collapsed && (
+            <>
+              <span style={{ flex: 1 }}>Fermes</span>
+              <span style={{ fontSize: 11, opacity: 0.7 }}>{farmsOpen ? "▾" : "▸"}</span>
+            </>
+          )}
         </button>
+
+        {showFarms && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {loadingFarms && (
+              <p style={{ fontSize: 13, color: "#6b7280", padding: "4px 12px 4px 38px", margin: 0 }}>
+                Chargement…
+              </p>
+            )}
+
+            {!loadingFarms && farms.length === 0 && (
+              <p style={{ fontSize: 13, color: "#6b7280", padding: "4px 12px 4px 38px", margin: 0 }}>
+                Aucune ferme pour l'instant.
+              </p>
+            )}
+
+            {farms.map((farm) => {
+              const isActive = farm.id === selectedFarmId;
+              const count = parcels.filter((p) => p.farm_id === farm.id).length;
+              return (
+                <button
+                  key={farm.id}
+                  type="button"
+                  onClick={() => selectFarm(farm.id)}
+                  style={subItemStyle(isActive)}
+                >
+                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {farm.name}
+                  </span>
+                  <span style={{ fontSize: 11, opacity: isActive ? 0.8 : 0.55 }}>{count}</span>
+                </button>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={onAddFarm}
+              title="Ajouter une ferme"
+              style={{ ...subItemStyle(false), color: "#1b4332", fontWeight: 600 }}
+            >
+              <span style={{ fontSize: 14 }}>＋</span>
+              <span>Ajouter une ferme</span>
+            </button>
+          </div>
+        )}
+
+        {/* ---- Cultures ---- */}
         <button
           type="button"
           style={itemStyle(location.pathname === "/cultures")}
@@ -101,63 +191,6 @@ export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps
           {!collapsed && <span>Cultures</span>}
         </button>
       </nav>
-
-      {/* Fermes */}
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "0 8px" }}>
-        {!collapsed && (
-          <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: 0.6, padding: "12px 12px 6px" }}>
-            Fermes
-          </div>
-        )}
-
-        {loadingFarms && !collapsed && (
-          <p style={{ fontSize: 13, color: "#6b7280", padding: "4px 12px" }}>Chargement…</p>
-        )}
-
-        {!loadingFarms && farms.length === 0 && !collapsed && (
-          <p style={{ fontSize: 13, color: "#6b7280", padding: "4px 12px" }}>Aucune ferme pour l'instant.</p>
-        )}
-
-        {farms.map((farm) => {
-          const isActive = farm.id === selectedFarmId;
-          const count = parcels.filter((p) => p.farm_id === farm.id).length;
-          return (
-            <button
-              key={farm.id}
-              type="button"
-              onClick={() => selectFarm(farm.id)}
-              title={collapsed ? farm.name : undefined}
-              style={{ ...itemStyle(isActive), marginBottom: 2 }}
-            >
-              <span style={{ fontSize: 15 }}>🌱</span>
-              {!collapsed && (
-                <>
-                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {farm.name}
-                  </span>
-                  <span style={{ fontSize: 11, opacity: isActive ? 0.8 : 0.55 }}>{count}</span>
-                </>
-              )}
-            </button>
-          );
-        })}
-
-        <button
-          type="button"
-          onClick={onAddFarm}
-          title="Ajouter une ferme"
-          style={{
-            ...itemStyle(false),
-            color: "#1b4332",
-            fontWeight: 600,
-            border: "1px dashed #cbd5e1",
-            marginTop: 4,
-          }}
-        >
-          <span style={{ fontSize: 16 }}>＋</span>
-          {!collapsed && <span>Ajouter une ferme</span>}
-        </button>
-      </div>
 
       <div style={{ flexShrink: 0, borderTop: "1px solid #e5e7eb", padding: 8 }}>
         <button

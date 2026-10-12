@@ -14,7 +14,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { rasterService } from "../../Services/rasterService";
 import { useRasterStatus } from "../../hooks/useRasterStatus";
 import { useParcelIndices } from "../../hooks/useParcelIndices";
-import { getIndiceInfo, interpretIndiceValue } from "../../utils/indices";
+import { getIndiceInfo, referenceLabel } from "../../utils/indices";
 import type { DashboardParcel } from "../../types/dashboard";
 import type { GeoJsonGeometry } from "../../types/parcel";
 import type { RasterType } from "../../types/raster";
@@ -546,9 +546,8 @@ const ParcelMapCard = forwardRef<ParcelMapCardHandle, ParcelMapCardProps>(
         ) ?? null
       : null;
     const hoveredInfo = hoverIndice ? getIndiceInfo(hoverIndice) : null;
-    const hoveredInterpretation = hoverIndice
-      ? interpretIndiceValue(hoverIndice, hoveredReading?.value ?? null)
-      : null;
+    // Repère général seulement : le verdict par culture est dans le graphique
+    const hoveredReference = referenceLabel(hoveredInfo);
 
     return (
       <div style={{ position: "relative", width: "100%", height: "100%" }}>
@@ -595,27 +594,9 @@ const ParcelMapCard = forwardRef<ParcelMapCardHandle, ParcelMapCardProps>(
                   </span>
                 </div>
 
-                {hoveredInterpretation && (
-                  <div
-                    style={{
-                      marginTop: 4,
-                      display: "inline-block",
-                      fontSize: 10,
-                      fontWeight: 600,
-                      color: hoveredInterpretation.color,
-                      border: `1px solid ${hoveredInterpretation.color}`,
-                      borderRadius: 999,
-                      padding: "1px 7px",
-                    }}
-                  >
-                    {hoveredInterpretation.label}
-                  </div>
-                )}
-
-                {hoveredInfo?.healthy && (
+                {hoveredReference && (
                   <div style={{ opacity: 0.6, marginTop: 4, fontSize: 10 }}>
-                    Bonne santé : {hoveredInfo.healthy[0].toLocaleString("fr-FR")} à{" "}
-                    {hoveredInfo.healthy[1].toLocaleString("fr-FR")}
+                    {hoveredReference}
                   </div>
                 )}
 

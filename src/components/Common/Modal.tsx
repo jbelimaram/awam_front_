@@ -30,7 +30,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
             ×
           </button>
         </div>
-        <div className="px-6 pb-6 overflow-y-auto flex-1 min-h-0">{children}</div>
+        <div className="px-6 pb-6 overflow-y-auto flex-1 min-h-0 scrollbar-hidden">{children}</div>
       </div>
     </div>
   );

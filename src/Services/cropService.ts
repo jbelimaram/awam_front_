@@ -3,6 +3,7 @@ import type {
   Crop,
   CropCreatePayload,
   CropObservation,
+  CropSuggestions,
   CropUpdatePayload,
   SpeciesOption,
 } from "../types/crop";
@@ -12,6 +13,10 @@ export const cropService = {
   /** Espèces du référentiel agronomique, pour la liste déroulante. */
   listSpecies: (): Promise<SpeciesOption[]> =>
     api.get<SpeciesOption[]>("/api/crops/species"),
+
+  /** Espèces lues sur la parcelle, à pré-cocher dans le formulaire. */
+  suggestions: (parcelId: number): Promise<CropSuggestions> =>
+    api.get<CropSuggestions>(`/api/parcels/${parcelId}/crop-suggestions`),
 
   /** Cultures d'une parcelle, de la plus récente à la plus ancienne. */
   listByParcel: (parcelId: number): Promise<Crop[]> =>

@@ -45,6 +45,17 @@ export interface CropUpdatePayload {
   notes?: string | null;
 }
 
+/** Origine d'une variété, pour regrouper la liste. */
+export type VarietyOrigin = "tunisian" | "spanish" | "international";
+
+/** Une variété proposée dans la liste du formulaire. */
+export interface VarietyOption {
+  name: string;
+  origin: VarietyOrigin;
+  /** Libellé du groupe : « Variétés tunisiennes »… */
+  origin_label: string;
+}
+
 /** Espèce du référentiel : seules celles-ci ont stades, seuils et Kc. */
 export interface SpeciesOption {
   code: string;
@@ -52,6 +63,19 @@ export interface SpeciesOption {
   crop_type: "perennial" | "annual";
   /** Arbre fruitier : affiche la case « Verger en production » */
   is_orchard: boolean;
+  /** Variétés proposées ; vide = saisie libre */
+  varieties: VarietyOption[];
+}
+
+/** Cultures lues sur la parcelle, pour pré-remplir le formulaire. */
+export interface CropSuggestions {
+  parcel_name: string;
+  /** Espèces à pré-cocher (reconnues, sans culture en cours) */
+  suggested: string[];
+  /** Espèces déjà suivies : en cours, ou pérennes récoltées */
+  already_active: string[];
+  /** Textes du champ culture non reconnus dans le référentiel */
+  unknown: string[];
 }
 
 export interface CropObservation {

@@ -89,19 +89,36 @@ function WeatherChip() {
   const farm = farms.find((f) => f.id === selectedFarmId);
   const { weather, loading } = useWeather(farm?.latitude, farm?.longitude);
 
-  if (!farm || farm.latitude == null || farm.longitude == null) return null;
-  if (loading || !weather) {
-    return <span style={{ fontSize: 13, opacity: 0.6 }}>…</span>;
-  }
+  const hasCoords = farm != null && farm.latitude != null && farm.longitude != null;
+  const ready = hasCoords && !loading && weather != null;
 
   return (
     <span
-      title={`${weatherCodeToLabel(weather.weather_code)} · vent ${weather.wind_speed ?? "—"} km/h · pluie ${weather.precipitation ?? 0} mm`}
-      style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, whiteSpace: "nowrap" }}
+      key={selectedFarmId ?? "none"}
+      translate="no"
+      title={
+        ready
+          ? `${weatherCodeToLabel(weather.weather_code)} · vent ${weather.wind_speed ?? "—"} km/h · pluie ${weather.precipitation ?? 0} mm`
+          : undefined
+      }
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        fontSize: 13,
+        whiteSpace: "nowrap",
+        minWidth: 1,
+      }}
     >
-      <span style={{ fontSize: 16 }}>{weatherCodeToIcon(weather.weather_code)}</span>
-      {weather.temperature ?? "—"}°C
-      <span style={{ opacity: 0.6 }}>· {weather.humidity ?? "—"}%</span>
+      {!hasCoords ? null : !ready ? (
+        <span style={{ opacity: 0.6 }}>…</span>
+      ) : (
+        <>
+          <span style={{ fontSize: 16 }}>{weatherCodeToIcon(weather.weather_code)}</span>
+          <span>{`${weather.temperature ?? "—"}°C`}</span>
+          <span style={{ opacity: 0.6 }}>{`· ${weather.humidity ?? "—"}%`}</span>
+        </>
+      )}
     </span>
   );
 }

@@ -54,20 +54,34 @@ export function toAnalysisPayload(form: AnalysisFormState): ParcelAnalysisPayloa
   };
 }
 
+/** Champs compacts : neuf champs tiennent sur cinq lignes. */
 const fieldStyle: React.CSSProperties = {
   width: "100%",
-  padding: "7px 9px",
+  padding: "5px 7px",
   borderRadius: 6,
   border: "1px solid #4b5563",
-  marginTop: 3,
+  marginTop: 2,
   background: "#111827",
   color: "#ffffff",
-  fontSize: 13,
+  fontSize: 12,
   fontFamily: "inherit",
   boxSizing: "border-box",
 };
 
-const labelStyle: React.CSSProperties = { fontSize: 12, color: "#d1d5db" };
+const labelStyle: React.CSSProperties = {
+  fontSize: 11,
+  color: "#d1d5db",
+  minWidth: 0,
+};
+
+const sectionStyle: React.CSSProperties = {
+  fontSize: 10,
+  fontWeight: 600,
+  color: "#9ca3af",
+  textTransform: "uppercase",
+  letterSpacing: 0.5,
+  marginTop: 2,
+};
 
 interface AnalysisFieldsProps {
   form: AnalysisFormState;
@@ -79,6 +93,9 @@ interface AnalysisFieldsProps {
  * Champs d'analyse de laboratoire (sol et eau), réutilisés par le formulaire
  * de parcelle et par l'ajout d'une analyse depuis la fiche.
  * Tous les champs sont facultatifs : une analyse peut être partielle.
+ *
+ * Mise en page compacte : date et type de sol sur une ligne, les quatre
+ * mesures du sol sur une ligne, les deux mesures de l'eau sur une ligne.
  */
 export default function AnalysisFields({ form, onChange, disabled = false }: AnalysisFieldsProps) {
   const set = (key: keyof AnalysisFormState) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -88,9 +105,10 @@ export default function AnalysisFields({ form, onChange, disabled = false }: Ana
     key: keyof AnalysisFormState,
     label: string,
     placeholder: string,
-    step = "0.01"
+    step = "0.01",
+    title?: string
   ) => (
-    <label style={labelStyle}>
+    <label style={labelStyle} title={title}>
       {label}
       <input
         type="number"
@@ -105,46 +123,44 @@ export default function AnalysisFields({ form, onChange, disabled = false }: Ana
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <label style={labelStyle}>
-        Date de l'analyse
-        <input
-          type="date"
-          value={form.analyzed_at}
-          onChange={set("analyzed_at")}
-          disabled={disabled}
-          style={fieldStyle}
-        />
-      </label>
-
-      <div style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5 }}>
-        Sol
+    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+      {/* Date + type de sol */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
+        <label style={labelStyle}>
+          Date de l'analyse
+          <input
+            type="date"
+            value={form.analyzed_at}
+            onChange={set("analyzed_at")}
+            disabled={disabled}
+            style={fieldStyle}
+          />
+        </label>
+        <label style={labelStyle}>
+          Type de sol
+          <input
+            type="text"
+            value={form.soil_type}
+            onChange={set("soil_type")}
+            disabled={disabled}
+            placeholder="Ex. Sableuse"
+            style={fieldStyle}
+          />
+        </label>
       </div>
 
-      <label style={labelStyle}>
-        Type de sol
-        <input
-          type="text"
-          value={form.soil_type}
-          onChange={set("soil_type")}
-          disabled={disabled}
-          placeholder="Ex. Sableuse, Sable-limon"
-          style={fieldStyle}
-        />
-      </label>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        {numberField("soil_ph", "pH du sol", "7.5", "0.1")}
-        {numberField("soil_humidity_pct", "Humidité (%)", "2.0")}
-        {numberField("soil_organic_matter_pct", "Matière organique (%)", "1.0")}
-        {numberField("soil_salinity_g_l", "Salinité (g/L)", "0.10")}
+      {/* Sol : quatre mesures sur une ligne */}
+      <div style={sectionStyle}>Sol</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+        {numberField("soil_ph", "pH", "7.5", "0.1", "pH du sol")}
+        {numberField("soil_humidity_pct", "Humid. %", "2.0", "0.01", "Humidité du sol (%)")}
+        {numberField("soil_organic_matter_pct", "M.O. %", "1.0", "0.01", "Matière organique (%)")}
+        {numberField("soil_salinity_g_l", "Sel g/L", "0.10", "0.01", "Salinité (g/L)")}
       </div>
 
-      <div style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: 0.5 }}>
-        Eau d'irrigation
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+      {/* Eau d'irrigation */}
+      <div style={sectionStyle}>Eau d'irrigation</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
         {numberField("water_ph", "pH de l'eau", "7.8", "0.1")}
         {numberField("water_nitrates_mg_l", "Nitrates (mg/L)", "21.6")}
       </div>

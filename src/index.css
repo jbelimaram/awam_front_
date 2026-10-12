@@ -20,3 +20,35 @@
   --color-succes: #809671;
   --color-erreur: #aa634d;
 }
+/* ----------------------------------------------------------------------
+   Barres de défilement fines et discrètes, dans toute l'application.
+   Les formulaires gardent leur barre masquée (.scrollbar-hidden), qui
+   prime sur cette règle générale.
+   ---------------------------------------------------------------------- */
+* {
+  scrollbar-width: thin;                         /* Firefox */
+  scrollbar-color: #c4ccc6 transparent;          /* curseur, piste */
+}
+
+*::-webkit-scrollbar {
+  width: 6px;                                    /* barre verticale */
+  height: 6px;                                   /* barre horizontale */
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #c4ccc6;
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #8fa396;
+}
+
+/* Pas de flèches aux extrémités */
+*::-webkit-scrollbar-button {
+  display: none;
+}

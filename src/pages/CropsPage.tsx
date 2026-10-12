@@ -147,7 +147,7 @@ function CropsContent({
       {/* ---- Colonne gauche : parcelles puis cultures ---- */}
       <div style={{ width: 280, flexShrink: 0, display: "flex", flexDirection: "column", gap: 12, overflowY: "auto" }}>
         <div style={cardStyle}>
-          <ParcelSelectors onAddParcel={() => {}} canAddParcel={false} />
+          <ParcelSelectors />
         </div>
 
         <div style={cardStyle}>
