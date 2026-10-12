@@ -9,7 +9,7 @@ interface TodayPreviewProps {
 export default function TodayPreview({ events, onEventClick }: TodayPreviewProps) {
   const today = new Date();
   const todayEvents = events.filter((e) => {
-    const eventDate = new Date(e.start_datetime);
+    const eventDate = new Date(e.start_at);
     return (
       eventDate.getFullYear() === today.getFullYear() &&
       eventDate.getMonth() === today.getMonth() &&
@@ -47,7 +47,7 @@ export default function TodayPreview({ events, onEventClick }: TodayPreviewProps
               {event.title}
             </span>
             <span className="ml-auto shrink-0" style={{ color: 'var(--texte-secondaire)' }}>
-              {new Date(event.start_datetime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+              {new Date(event.start_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </button>
         ))}

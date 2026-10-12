@@ -1,16 +1,5 @@
 import type { Indicator } from "../../types/diagnosis";
-
-/**
- * Code couleur du référentiel agronomique :
- *   🔴 bas      — sous l'intervalle attendu, à vérifier
- *   🟢 normal   — dans l'intervalle attendu
- *   🔵 élevé    — au-dessus, développement excellent (pas une alerte)
- */
-const LEVEL_STYLE: Record<string, { color: string; bg: string; label: string }> = {
-  low: { color: "#b42318", bg: "#fef2f2", label: "Faible" },
-  normal: { color: "#15803d", bg: "#f0fdf4", label: "Normal" },
-  high: { color: "#1d4ed8", bg: "#eff6ff", label: "Excellent" },
-};
+import { LEVEL_STYLE } from "../../utils/indices";
 
 /** Définition courte de chaque indice, affichée au survol du nom. */
 const INDICE_HINT: Record<string, string> = {
@@ -27,7 +16,10 @@ const INDICE_HINT: Record<string, string> = {
  * verdict coloré et rappel du seuil. Tout vient du back.
  */
 export default function IndicatorRow({ indicator }: { indicator: Indicator }) {
-  const style = LEVEL_STYLE[indicator.level] ?? LEVEL_STYLE.normal;
+  // Couleurs partagées avec le reste de l'application (utils/indices.ts)
+  const style = LEVEL_STYLE[indicator.level];
+  // Indice non évalué : sa variation est affichée, mais pas jugée
+  const isInfo = indicator.level === "info";
   const delta = indicator.delta;
   const isPercent = indicator.unit === "%";
   const decimals = isPercent ? 0 : 3;
@@ -64,7 +56,7 @@ export default function IndicatorRow({ indicator }: { indicator: Indicator }) {
       <span
         style={{
           fontSize: 11,
-          color: delta == null ? "#9ca3af" : deltaIsBad ? "#b42318" : "#15803d",
+          color: delta == null || isInfo ? "#9ca3af" : deltaIsBad ? "#b42318" : "#15803d",
         }}
       >
         {delta == null
