@@ -1,5 +1,5 @@
 import { api } from "./api";
-import type { IndiceReading, IndiceRaster } from "../types/indice";
+import type { IndiceBaseline, IndiceReading, IndiceRaster } from "../types/indice";
 
 // api/routes/indices.py, monté sous /api
 export const indiceService = {
@@ -10,6 +10,12 @@ export const indiceService = {
 
   available: (parcelId: number): Promise<string[]> =>
     api.get<string[]>(`/api/parcels/${parcelId}/indices/available`),
+
+  /** Plage habituelle de l'indice à la période de sa dernière mesure. */
+  baseline: (parcelId: number, indiceName: string): Promise<IndiceBaseline> =>
+    api.get<IndiceBaseline>(
+      `/api/parcels/${parcelId}/indices/${encodeURIComponent(indiceName)}/baseline`
+    ),
 
   // 🆕 Affiche n'importe quel indice en calque sur la carte, pas seulement NDVI.
   raster: (parcelId: number, indiceName: string): Promise<IndiceRaster> =>

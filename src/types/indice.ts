@@ -30,6 +30,29 @@ export interface IndiceRaster {
   band_index: number | null;
 }
 
+/**
+ * Plage habituelle d'un indice pour une parcelle, à la période de sa
+ * mesure la plus récente, calculée sur les années précédentes.
+ * Réponse de GET /api/parcels/{id}/indices/{nom}/baseline.
+ */
+export interface IndiceBaseline {
+  indice_name: string;
+  reference_date: string | null;
+  value: number | null;
+  /** ok : plage calculée · insufficient : historique trop court · no_data : aucune mesure */
+  status: "ok" | "insufficient" | "no_data";
+  /** 10e centile, médiane et 90e centile des années précédentes */
+  low: number | null;
+  median: number | null;
+  high: number | null;
+  values_count: number;
+  /** Années ayant fourni des mesures à cette période */
+  years: number[];
+  verdict: "below" | "within" | "above" | null;
+  message: string;
+  window_days: number;
+}
+
 export const KNOWN_INDICE_NAMES = [
   "NDVI", "NDMI", "NDWI", "NDRE", "EVI", "SAVI", "MSAVI",
   "NBR", "REDEDGE", "VARI", "CARBONATE", "SI_SOIL", "PSRI", "FCOVER",

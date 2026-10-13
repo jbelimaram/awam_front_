@@ -3,6 +3,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceArea,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -12,6 +13,36 @@ import { useSelection } from "../../hooks/useSelection";
 import { useIndiceSeries } from "../../hooks/useIndiceSeries";
 import { useCropDiagnosis } from "../../hooks/useCropDiagnosis";
 import { INDICE_CATALOG, LEVEL_STYLE, getIndiceInfo, referenceLabel } from "../../utils/indices";
+import { api } from "../../Services/api";
+
+/**
+ * Plage habituelle d'un indice pour une parcelle, calculée par le back sur
+ * l'historique des années précédentes.
+ * Réponse de GET /api/parcels/{id}/indices/{nom}/baseline.
+ */
+interface IndiceBaseline {
+  status: "ok" | "insufficient" | "no_data";
+  low: number | null;
+  high: number | null;
+  years: number[];
+  verdict: "below" | "within" | "above" | null;
+  message: string;
+}
+
+/**
+ * Nombre de dates affichées sur la courbe : les plus récentes. L'historique
+ * complet reste en base, où il sert au calcul de la plage habituelle.
+ */
+const DISPLAYED_POINTS = 3;
+
+/** Verdict de la valeur par rapport à la plage habituelle de la parcelle. */
+const BASELINE_VERDICT: Record<string, { color: string; bg: string; label: string }> = {
+  within: { color: "#15803d", bg: "#f0fdf4", label: "Habituel" },
+  below: { color: "#b42318", bg: "#fef2f2", label: "Inhabituellement bas" },
+  above: { color: "#1d4ed8", bg: "#eff6ff", label: "Inhabituellement haut" },
+};
+
+const fmt = (v: number) => v.toLocaleString("fr-FR", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 
 const shortDate = (iso: string) =>
   new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
@@ -21,6 +52,25 @@ export default function IndicesChartCard() {
   const [selectedIndice, setSelectedIndice] = useState<string | null>(null);
   const { readings, availableIndices, loading } = useIndiceSeries(selectedParcelId, selectedIndice);
   const { items: diagnoses, activeCrops, loading: diagnosisLoading } = useCropDiagnosis(selectedParcelId);
+  // Plage habituelle de l'indice affiché, rechargée à chaque changement
+  const [baseline, setBaseline] = useState<IndiceBaseline | null>(null);
+  useEffect(() => {
+    if (selectedParcelId == null || !selectedIndice) {
+      setBaseline(null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .get<IndiceBaseline>(
+        `/api/parcels/${selectedParcelId}/indices/${encodeURIComponent(selectedIndice)}/baseline`
+      )
+      .then((b) => !cancelled && setBaseline(b))
+      .catch(() => !cancelled && setBaseline(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedParcelId, selectedIndice]);
+  const hasBand = baseline?.status === "ok" && baseline.low != null && baseline.high != null;
 
   // Sélection par défaut : NDVI s'il est disponible, sinon le premier indice
   useEffect(() => {
@@ -47,6 +97,9 @@ export default function IndicesChartCard() {
     [readings]
   );
 
+  // Courbe : seulement les dernières dates
+  const displayedData = useMemo(() => chartData.slice(-DISPLAYED_POINTS), [chartData]);
+
   const last = chartData[chartData.length - 1] ?? null;
   const previous = chartData[chartData.length - 2] ?? null;
   const delta = last && previous ? last.value - previous.value : null;
@@ -67,14 +120,16 @@ export default function IndicesChartCard() {
 
   // Échelle resserrée sur les données, pour une courbe lisible
   const domain = useMemo<[number, number]>(() => {
-    const values = chartData.map((d) => d.value);
+    // La bande habituelle doit rester visible avec les points affichés
+    const values = displayedData.map((d) => d.value);
+    if (hasBand) values.push(baseline!.low as number, baseline!.high as number);
     if (values.length === 0) return info?.range ?? [-1, 1];
     const min = Math.min(...values);
     const max = Math.max(...values);
     const pad = Math.max((max - min) * 0.25, 0.05);
     const [rMin, rMax] = info?.range ?? [-1, 1];
     return [Math.max(rMin, min - pad), Math.min(rMax, max + pad)];
-  }, [chartData, info]);
+  }, [displayedData, hasBand, baseline, info]);
 
   if (!selectedParcelId) {
     return (
@@ -125,15 +180,30 @@ export default function IndicesChartCard() {
           <>
             <div style={{ flex: 1, minHeight: 150 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 6, right: 10, bottom: 2, left: -18 }}>
+                <LineChart data={displayedData} margin={{ top: 6, right: 16, bottom: 2, left: -18 }}>
                   <CartesianGrid stroke="#eef0f2" vertical={false} />
+
+                  {/* Plage habituelle de la parcelle à cette période */}
+                  {hasBand && (
+                    <ReferenceArea
+                      y1={baseline!.low as number}
+                      y2={baseline!.high as number}
+                      fill="#15803d"
+                      fillOpacity={0.1}
+                      stroke="#15803d"
+                      strokeOpacity={0.25}
+                      strokeDasharray="3 3"
+                      ifOverflow="extendDomain"
+                    />
+                  )}
 
                   <XAxis
                     dataKey="label"
                     tick={{ fontSize: 10, fill: "#6b7280" }}
                     tickLine={false}
                     axisLine={{ stroke: "#e5e7eb" }}
-                    minTickGap={18}
+                    minTickGap={0}
+                    interval={0}
                   />
                   <YAxis
                     domain={domain}
@@ -157,8 +227,8 @@ export default function IndicesChartCard() {
                     dataKey="value"
                     stroke="#1b4332"
                     strokeWidth={2}
-                    dot={{ r: 2.5, fill: "#1b4332" }}
-                    activeDot={{ r: 4.5 }}
+                    dot={{ r: 4, fill: "#1b4332" }}
+                    activeDot={{ r: 5.5 }}
                     isAnimationActive={false}
                   />
                 </LineChart>
@@ -176,6 +246,40 @@ export default function IndicesChartCard() {
                   <span style={{ fontSize: 11, color: delta >= 0 ? "#15803d" : "#b42318" }}>
                     {delta >= 0 ? "▲" : "▼"} {Math.abs(delta).toFixed(3)}
                   </span>
+                )}
+              </div>
+            )}
+
+            {/* ---- Comparaison à l'historique de la parcelle ---- */}
+            {baseline && baseline.status !== "no_data" && (
+              <div style={{ marginTop: 5, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 10 }}>
+                {hasBand ? (
+                  <>
+                    <span style={{ color: "#374151" }}>
+                      Habituel à cette période
+                      {baseline.years.length > 0 &&
+                        ` (${baseline.years[0]}–${baseline.years[baseline.years.length - 1]})`}
+                      {" : "}
+                      <strong>{fmt(baseline.low as number)} à {fmt(baseline.high as number)}</strong>
+                    </span>
+                    {baseline.verdict && (
+                      <span
+                        title={baseline.message}
+                        style={{
+                          fontWeight: 600,
+                          color: BASELINE_VERDICT[baseline.verdict].color,
+                          background: BASELINE_VERDICT[baseline.verdict].bg,
+                          border: `1px solid ${BASELINE_VERDICT[baseline.verdict].color}`,
+                          borderRadius: 999,
+                          padding: "1px 8px",
+                        }}
+                      >
+                        ● {BASELINE_VERDICT[baseline.verdict].label}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span style={{ color: "#6b7280" }}>{baseline.message}</span>
                 )}
               </div>
             )}
