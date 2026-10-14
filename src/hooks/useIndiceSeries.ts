@@ -15,7 +15,9 @@ interface UseIndiceSeriesResult {
  */
 export function useIndiceSeries(
   parcelId: number | null,
-  indiceName: string | null
+  indiceName: string | null,
+  /** Changer cette valeur relit les données (ex. nouvelle image annoncée) */
+  refreshKey = 0
 ): UseIndiceSeriesResult {
   const [availableIndices, setAvailableIndices] = useState<string[]>([]);
   const [readings, setReadings] = useState<IndiceReading[]>([]);
@@ -35,7 +37,7 @@ export function useIndiceSeries(
     return () => {
       cancelled = true;
     };
-  }, [parcelId]);
+  }, [parcelId, refreshKey]);
 
   useEffect(() => {
     if (parcelId == null || !indiceName) {
@@ -59,7 +61,7 @@ export function useIndiceSeries(
     return () => {
       cancelled = true;
     };
-  }, [parcelId, indiceName]);
+  }, [parcelId, indiceName, refreshKey]);
 
   return { readings, availableIndices, loading, error };
 }

@@ -18,7 +18,11 @@ interface UseRasterStatusResult {
  * "pending" (traitement Celery en cours après création/modification de
  * géométrie). S'arrête dès que "ready" ou "failed", ou si parcelId change.
  */
-export function useRasterStatus(parcelId: number | null): UseRasterStatusResult {
+export function useRasterStatus(
+  parcelId: number | null,
+  /** Changer cette valeur relit l'état (ex. analyse annoncée terminée) */
+  refreshKey = 0
+): UseRasterStatusResult {
   const [rasterStatus, setRasterStatus] = useState<RasterStatus | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +86,7 @@ export function useRasterStatus(parcelId: number | null): UseRasterStatusResult 
       cancelled = true;
       clearPending();
     };
-  }, [parcelId, clearPending]);
+  }, [parcelId, refreshKey, clearPending]);
 
   return { rasterStatus, loading, error, readyTick };
 }

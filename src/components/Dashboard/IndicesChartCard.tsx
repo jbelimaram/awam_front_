@@ -14,6 +14,7 @@ import { useIndiceSeries } from "../../hooks/useIndiceSeries";
 import { useCropDiagnosis } from "../../hooks/useCropDiagnosis";
 import { INDICE_CATALOG, LEVEL_STYLE, getIndiceInfo, referenceLabel } from "../../utils/indices";
 import { api } from "../../Services/api";
+import { useParcelEventTick } from "../../hooks/useParcelEvents";
 
 /**
  * Plage habituelle d'un indice pour une parcelle, calculée par le back sur
@@ -50,7 +51,9 @@ const shortDate = (iso: string) =>
 export default function IndicesChartCard() {
   const { selectedParcelId, selectedParcel } = useSelection();
   const [selectedIndice, setSelectedIndice] = useState<string | null>(null);
-  const { readings, availableIndices, loading } = useIndiceSeries(selectedParcelId, selectedIndice);
+  // Nouvelle image ou historique annoncé par le back : courbe et plage relues
+  const dataTick = useParcelEventTick(selectedParcelId, ["indices", "history"]);
+  const { readings, availableIndices, loading } = useIndiceSeries(selectedParcelId, selectedIndice, dataTick);
   const { items: diagnoses, activeCrops, loading: diagnosisLoading } = useCropDiagnosis(selectedParcelId);
   // Plage habituelle de l'indice affiché, rechargée à chaque changement
   const [baseline, setBaseline] = useState<IndiceBaseline | null>(null);
@@ -69,7 +72,7 @@ export default function IndicesChartCard() {
     return () => {
       cancelled = true;
     };
-  }, [selectedParcelId, selectedIndice]);
+  }, [selectedParcelId, selectedIndice, dataTick]);
   const hasBand = baseline?.status === "ok" && baseline.low != null && baseline.high != null;
 
   // Sélection par défaut : NDVI s'il est disponible, sinon le premier indice

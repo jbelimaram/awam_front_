@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useSelection } from "../../hooks/useSelection";
 import { parcelService } from "../../Services/parcelService";
 import { useToast } from "../../hooks/useToast";
+import { useRasterStatus } from "../../hooks/useRasterStatus";
+import { useParcelEventTick } from "../../hooks/useParcelEvents";
 import { formatAreaHa, getCentroid } from "../../utils/geo";
 import ParcelFormModal from "./ParcelFormModal";
 import type { ParcelUpdatePayload } from "../../types/parcel";
@@ -41,6 +43,11 @@ export default function ParcelInfoCard() {
   const { showToast } = useToast();
   const [showEdit, setShowEdit] = useState(false);
   const [busy, setBusy] = useState(false);
+  // État RÉEL de l'analyse : relu quand le back annonce une fin de
+  // traitement, ou après un clic sur « Rafraîchir ».
+  const [refreshClicks, setRefreshClicks] = useState(0);
+  const eventTick = useParcelEventTick(selectedParcel?.id ?? null, ["rasters", "indices", "failed"]);
+  const { rasterStatus } = useRasterStatus(selectedParcel?.id ?? null, eventTick + refreshClicks);
 
   if (!selectedParcel) {
     return (
@@ -51,6 +58,9 @@ export default function ParcelInfoCard() {
   }
 
   const isActive = selectedParcel.status === "active";
+  // État lu en direct ; à défaut, celui chargé avec la parcelle
+  const currentStatus = rasterStatus ?? selectedParcel.raster_status;
+  const analysing = currentStatus === "pending";
   const centroid = getCentroid(selectedParcel.geometry);
 
   const handleUpdate = async (payload: ParcelUpdatePayload) => {
@@ -80,6 +90,7 @@ export default function ParcelInfoCard() {
       await parcelService.refresh(selectedParcel.id, true);
       showToast("success", "Analyse des indices lancée.");
       await refreshParcels(selectedParcel.id);
+      setRefreshClicks((n) => n + 1);
     } catch (e) {
       showToast("error", e instanceof Error ? e.message : "Analyse impossible.");
     } finally {
@@ -185,7 +196,7 @@ export default function ParcelInfoCard() {
       </div>
 
       <p style={{ fontSize: 11, color: "#6b7280", margin: "10px 0 0" }}>
-        {RASTER_STATUS_LABELS[selectedParcel.raster_status] ?? ""}
+        {RASTER_STATUS_LABELS[currentStatus] ?? ""}
       </p>
 
       {/* L'analyse satellite n'a de sens que sur une parcelle active */}
@@ -193,7 +204,8 @@ export default function ParcelInfoCard() {
         <button
           type="button"
           onClick={handleRefreshIndices}
-          disabled={busy}
+          disabled={busy || analysing}
+          title={analysing ? "Une analyse est déjà en cours" : undefined}
           style={{
             marginTop: 8,
             width: "100%",
@@ -204,10 +216,11 @@ export default function ParcelInfoCard() {
             color: "#2563eb",
             fontSize: 12,
             fontWeight: 600,
-            cursor: busy ? "wait" : "pointer",
+            cursor: busy ? "wait" : analysing ? "not-allowed" : "pointer",
+            opacity: analysing ? 0.6 : 1,
           }}
         >
-          {busy ? "…" : "🔄 Rafraîchir les indices"}
+          {busy ? "…" : analysing ? "Analyse en cours…" : "🔄 Rafraîchir les indices"}
         </button>
       )}
       <ParcelAnalysisPanel parcelId={selectedParcel.id} />

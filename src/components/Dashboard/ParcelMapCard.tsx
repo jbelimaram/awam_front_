@@ -13,6 +13,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 import { rasterService } from "../../Services/rasterService";
 import { useRasterStatus } from "../../hooks/useRasterStatus";
+import { useParcelEventTick } from "../../hooks/useParcelEvents";
 import { useParcelIndices } from "../../hooks/useParcelIndices";
 import { getIndiceInfo, referenceLabel } from "../../utils/indices";
 import type { DashboardParcel } from "../../types/dashboard";
@@ -175,6 +176,8 @@ const ParcelMapCard = forwardRef<ParcelMapCardHandle, ParcelMapCardProps>(
 
     const selectedParcelId = selectedParcel?.id ?? null;
     const { rasterStatus, readyTick } = useRasterStatus(selectedParcelId);
+    // Nouvelle image satellite annoncée par le back : le calque est rechargé
+    const rasterEventTick = useParcelEventTick(selectedParcelId, ["rasters"]);
 
     // Infobulle des indices au survol d'une parcelle
     const parcelIndices = useParcelIndices();
@@ -456,7 +459,7 @@ const ParcelMapCard = forwardRef<ParcelMapCardHandle, ParcelMapCardProps>(
         }
       })();
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedParcelId, selectedParcel?.status, mapReady, visibleRasterLayers, rasterStatus, readyTick]);
+    }, [selectedParcelId, selectedParcel?.status, mapReady, visibleRasterLayers, rasterStatus, readyTick, rasterEventTick]);
 
     // Visibilité des calques déjà chargés (sans refaire d'appel réseau)
     useEffect(() => {
