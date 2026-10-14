@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Modal from "../Common/Modal";
+import CultureSelect from "./CultureSelect";
 import type { DashboardParcel } from "../../types/dashboard";
 import type { GeoJsonGeometry, ParcelUpdatePayload } from "../../types/parcel";
 import { parcelService } from "../../Services/parcelService";
@@ -151,18 +152,19 @@ export default function ParcelFormModal({
           />
         </label>
 
+        {/* Cultures : choix dans le référentiel, plusieurs possibles */}
+        <div style={labelStyle}>
+          Cultures
+          <CultureSelect
+            value={form.culture_type}
+            onChange={(v) => setForm({ ...form, culture_type: v })}
+            disabled={submitting}
+            fieldStyle={fieldStyle}
+          />
+        </div>
+
         {/* Deux colonnes : le formulaire reste court malgré tous les champs */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <label style={labelStyle}>
-            Culture
-            <input
-              type="text"
-              value={form.culture_type}
-              onChange={(e) => setForm({ ...form, culture_type: e.target.value })}
-              disabled={submitting}
-              style={fieldStyle}
-            />
-          </label>
 
           <label style={labelStyle}>
             Statut
