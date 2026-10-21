@@ -211,10 +211,16 @@ const ParcelMapCard = forwardRef<ParcelMapCardHandle, ParcelMapCardProps>(
           },
           layers: [{ id: "base", type: "raster", source: "base" }],
         },
-        center: [10.18, 36.81],
+                center: [10.18, 36.81],
         zoom: 11,
         minZoom: 3,
         maxZoom: 18,
+        // Les tuiles de l'image satellite viennent du back (/cog/…), qui
+        // exige d'être connecté : le cookie de session doit accompagner ces
+        // requêtes. Les fonds de carte externes (Esri, OpenTopoMap) restent
+        // appelés sans cookie.
+        transformRequest: (url) =>
+          url.startsWith(API_URL) ? { url, credentials: "include" } : { url },
       });
       mapRef.current = map;
       map.addControl(new maplibregl.ScaleControl(), "bottom-left");
