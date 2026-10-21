@@ -1,9 +1,21 @@
 import type { Crop } from "../../types/crop";
+import { shownStatus } from "../../utils/cropStatus";
 
 const STATUS_LABEL: Record<string, string> = {
   active: "En cours",
   harvested: "Récoltée",
   abandoned: "Abandonnée",
+  ended: "Terminée",
+};
+
+/** « 8 mois », « 1 an », « 4 ans » */
+const formatAge = (years: number): string => {
+  if (years < 1) {
+    const months = Math.max(Math.round(years * 12), 0);
+    return months <= 1 ? "moins d'un mois" : `${months} mois`;
+  }
+  const n = Math.floor(years);
+  return n === 1 ? "1 an" : `${n} ans`;
 };
 
 const row: React.CSSProperties = {
@@ -97,8 +109,14 @@ export default function CropInfoTab({ crop, history, onEdit, onDelete }: CropInf
         </div>
         <div style={row}>
           <span style={label}>Statut</span>
-          <span style={{ ...value, color: crop.status === "active" ? "#15803d" : "#6b7280" }}>
-            {STATUS_LABEL[crop.status] ?? crop.status}
+          <span
+            style={{
+              ...value,
+              // Une pérenne récoltée aujourd'hui reste dans son cycle : en vert
+              color: crop.status === "active" ? "#15803d" : "#6b7280",
+            }}
+          >
+            {STATUS_LABEL[shownStatus(crop)] ?? crop.status}
           </span>
         </div>
         <div style={row}>
@@ -117,11 +135,38 @@ export default function CropInfoTab({ crop, history, onEdit, onDelete }: CropInf
           <span style={label}>Récolte réelle</span>
           <span style={value}>{fmtDate(crop.actual_harvest_date)}</span>
         </div>
+        {crop.status === "ended" && (
+          <div style={row}>
+            <span style={label}>Fin de culture</span>
+            <span style={value}>{fmtDate(crop.end_date)}</span>
+          </div>
+        )}
+        {crop.actual_yield != null && (
+          <div style={row}>
+            <span style={label}>Quantité récoltée</span>
+            <span style={value}>
+              {crop.actual_yield.toLocaleString("fr-FR")} {crop.yield_unit ?? ""}
+            </span>
+          </div>
+        )}
         {crop.is_orchard && (
           <div style={row}>
             <span style={label}>Verger en production</span>
             <span style={{ ...value, color: crop.in_production ? "#15803d" : "#92400e" }}>
               {crop.in_production ? "Oui" : "Non"}
+            </span>
+          </div>
+        )}
+        {crop.age_years != null && !crop.is_annual && (
+          <div style={row}>
+            <span style={label}>Âge de la plantation</span>
+            <span style={value}>
+              {formatAge(crop.age_years)}
+              {crop.optimal_production && (
+                <span style={{ color: "#6b7280", fontWeight: 400 }}>
+                  {" "}· production optimale {crop.optimal_production}
+                </span>
+              )}
             </span>
           </div>
         )}
@@ -134,6 +179,24 @@ export default function CropInfoTab({ crop, history, onEdit, onDelete }: CropInf
           </div>
         )}
       </div>
+
+      {crop.lifespan_note && (
+        <p
+          style={{
+            margin: "10px 0 0",
+            padding: "8px 10px",
+            borderRadius: 6,
+            fontSize: 12,
+            lineHeight: 1.4,
+            background: crop.lifespan_level === "warning" ? "#fffbeb" : "#f3f4f6",
+            border: `1px solid ${crop.lifespan_level === "warning" ? "#fcd34d" : "#e5e7eb"}`,
+            color: crop.lifespan_level === "warning" ? "#92400e" : "#4b5563",
+          }}
+        >
+          {crop.lifespan_level === "warning" ? "⚠ " : "ℹ "}
+          {crop.lifespan_note}
+        </p>
+      )}
 
       {crop.notes && (
         <p style={{ fontSize: 12, color: "#6b7280", margin: "8px 0 0", lineHeight: 1.45 }}>
@@ -152,11 +215,15 @@ export default function CropInfoTab({ crop, history, onEdit, onDelete }: CropInf
               style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#374151", padding: "3px 0" }}
             >
               <span>
-                {c.planting_date ? new Date(c.planting_date).getFullYear() : "—"} ·{" "}
+                {c.planting_date ? new Date(c.planting_date).getFullYear() : "—"}
+                {/* Culture terminée : sa période de vie, ex. « 2017 – 2026 » */}
+                {c.status === "ended" && c.end_date ? ` – ${new Date(c.end_date).getFullYear()}` : ""} ·{" "}
                 {c.species_label ?? c.species}
               </span>
               <span style={{ color: "#6b7280" }}>
-                {c.actual_harvest_date
+                {c.status === "ended"
+                  ? `terminée le ${fmtDate(c.end_date)}`
+                  : c.actual_harvest_date
                   ? `récoltée le ${fmtDate(c.actual_harvest_date)}`
                   : STATUS_LABEL[c.status] ?? c.status}
               </span>

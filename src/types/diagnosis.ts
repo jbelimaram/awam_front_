@@ -91,4 +91,6 @@ export interface CropNeeds {
   water?: WaterNeed | null;
   soil: SoilRow[];
   soil_analysis_date?: string | null;
+  /** Culture clôturée : aucun besoin calculé, et pourquoi */
+  closed_reason?: string | null;
 }

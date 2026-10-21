@@ -37,6 +37,15 @@ export default function NeedsTab({ needs }: { needs: CropNeeds | null }) {
     );
   }
 
+  // Culture clôturée : aucun besoin à afficher, seulement la raison
+  if (needs.closed_reason) {
+    return (
+      <p style={{ fontSize: 13, color: "#6b7280", margin: 0, padding: "8px 0" }}>
+        {needs.closed_reason}
+      </p>
+    );
+  }
+
   const water = needs.water;
 
   return (
