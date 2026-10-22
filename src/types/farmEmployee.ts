@@ -8,6 +8,8 @@ export interface FarmEmployee {
   role: FarmEmployeeRole | null;
   hired_at: string | null;
   is_active: boolean;
+  /** Équipe dans cette ferme : code d'un type de tâche, null si sans équipe */
+  team?: string | null;
   employee: Employee;
 }
 
@@ -19,4 +21,6 @@ export interface FarmEmployeeCreatePayload {
 export interface FarmEmployeeUpdatePayload {
   role?: FarmEmployeeRole;
   is_active?: boolean;
+  /** Changer d'équipe ; null = retirer de l'équipe */
+  team?: string | null;
 }

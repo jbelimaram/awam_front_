@@ -4,12 +4,17 @@ import FarmFormModal from "../components/Dashboard/FarmFormModal";
 import ParcelSelectors from "../components/Dashboard/ParcelSelectors";
 import EmployeeFormModal from "../components/Employees/EmployeeFormModal";
 import EmployeeInfoTab from "../components/Employees/EmployeeInfoTab";
+import EmployeeTeamTab from "../components/Employees/EmployeeTeamTab";
+import TaskTypesModal from "../components/Employees/TaskTypesModal";
 import { SelectionProvider } from "../context/SelectionContext";
 import { employeeService } from "../Services/employeeService";
 import { farmEmployeeService } from "../Services/farmEmployeeService";
+import { taskTypeService } from "../Services/taskTypeService";
 import { useSelection } from "../hooks/useSelection";
 import { useToast } from "../hooks/useToast";
 import type { FarmEmployee } from "../types/farmEmployee";
+import type { TaskType } from "../types/taskType";
+import { teamLabel } from "../utils/teams";
 
 type TabKey = "info" | "teams" | "planning" | "interventions";
 
@@ -22,8 +27,7 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 /** Ce que contiendront les onglets des prochaines étapes */
-const NEXT_STEPS: Record<Exclude<TabKey, "info">, string> = {
-  teams: "Affecter les employés à des équipes, et les déplacer à tout moment.",
+const NEXT_STEPS: Record<Exclude<TabKey, "info" | "teams">, string> = {
   planning:
     "Planifier les affectations des équipes et des employés selon les besoins des parcelles, sous-parcelles et cultures.",
   interventions: "Enregistrer les interventions et les tâches : réalisées, à réaliser, à entretenir.",
@@ -36,6 +40,9 @@ const cardStyle: React.CSSProperties = {
   boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
 };
 const muted: React.CSSProperties = { fontSize: 13, color: "#6b7280", margin: 0 };
+const groupTitle: React.CSSProperties = {
+  fontSize: 11, fontWeight: 600, color: "#6b7280", margin: "8px 0 2px", padding: "0 10px",
+};
 
 /** Le coordinateur d'abord, puis les membres par ordre alphabétique */
 const byRoleThenName = (a: FarmEmployee, b: FarmEmployee) =>
@@ -58,9 +65,32 @@ function EmployeesContent({
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<FarmEmployee | null>(null);
+  const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
+  const [showTaskTypes, setShowTaskTypes] = useState(false);
 
   const farmName = farms.find((f) => f.id === selectedFarmId)?.name ?? "";
-  const sorted = useMemo(() => [...links].sort(byRoleThenName), [links]);
+  /**
+   * Employés regroupés par équipe, dans l'ordre des types de tâche
+   * (prédéfinis, puis libres), et « Sans équipe » en dernier.
+   */
+  const groups = useMemo(() => {
+    const order = taskTypes.map((t) => t.code);
+    const byTeam = new Map<string, FarmEmployee[]>();
+    for (const l of links) {
+      const key = l.team ?? "";
+      const list = byTeam.get(key);
+      if (list) list.push(l);
+      else byTeam.set(key, [l]);
+    }
+    const rank = (key: string) => (key === "" ? Infinity : order.indexOf(key) === -1 ? order.length : order.indexOf(key));
+    return [...byTeam.entries()]
+      .sort((a, b) => rank(a[0]) - rank(b[0]) || a[0].localeCompare(b[0], "fr"))
+      .map(([key, items]) => ({
+        key,
+        title: key ? `Équipe ${teamLabel(key, taskTypes).toLowerCase()}` : "Sans équipe",
+        items: [...items].sort(byRoleThenName),
+      }));
+  }, [links, taskTypes]);
   const selected = links.find((l) => l.id === selectedLinkId) ?? null;
 
   // --- Employés de la ferme choisie -----------------------------------
@@ -92,6 +122,15 @@ function EmployeesContent({
   useEffect(() => {
     loadEmployees();
   }, [loadEmployees]);
+
+  // --- Types de tâche : ils nomment les équipes -------------------------
+  const loadTaskTypes = useCallback(() => {
+    taskTypeService.list().then(setTaskTypes).catch(() => setTaskTypes([]));
+  }, []);
+
+  useEffect(() => {
+    loadTaskTypes();
+  }, [loadTaskTypes]);
 
   const handleDelete = async () => {
     if (!selected) return;
@@ -153,7 +192,10 @@ function EmployeesContent({
           )}
 
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {sorted.map((l) => {
+            {groups.map((group) => (
+              <div key={group.key || "sans-equipe"}>
+                <div style={groupTitle}>{group.title}</div>
+                {group.items.map((l) => {
               const isActive = l.id === selectedLinkId;
               return (
                 <button
@@ -176,7 +218,9 @@ function EmployeesContent({
                   )}
                 </button>
               );
-            })}
+                })}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -221,7 +265,17 @@ function EmployeesContent({
                 }}
                 onDelete={handleDelete}
               />
-            ) : (
+            ) : tab === "teams" && selectedFarmId ? (
+              <EmployeeTeamTab
+                link={selected}
+                links={links}
+                farmId={selectedFarmId}
+                farmName={farmName}
+                taskTypes={taskTypes}
+                onChanged={() => loadEmployees(selected.id)}
+                onManageTypes={() => setShowTaskTypes(true)}
+              />
+            ) : tab === "teams" ? null : (
               <p style={{ ...muted, fontFamily: "system-ui, sans-serif" }}>
                 <strong style={{ color: "#374151" }}>Prochaine étape.</strong> {NEXT_STEPS[tab]}
               </p>
@@ -234,6 +288,17 @@ function EmployeesContent({
         isOpen={showFarmForm}
         onClose={onCloseFarmForm}
         onSaved={(farmId) => refreshFarms(farmId)}
+      />
+
+      <TaskTypesModal
+        isOpen={showTaskTypes}
+        onClose={() => setShowTaskTypes(false)}
+        taskTypes={taskTypes}
+        onChanged={() => {
+          loadTaskTypes();
+          // Un renommage change aussi l'équipe des employés concernés
+          loadEmployees();
+        }}
       />
 
       {selectedFarmId && (
