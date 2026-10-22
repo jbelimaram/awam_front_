@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useSelection } from "../../hooks/useSelection";
 import { useWeather } from "../../hooks/useWeather";
+import AlertsBell from "./AlertsBell";
 import { weatherCodeToLabel, weatherCodeToIcon } from "../../utils/weatherCodeToLabel";
 
 /** Fil d'Ariane cliquable : Accueil > Ferme > Parcelle */
@@ -254,22 +255,7 @@ export default function TopBar() {
       <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
         <WeatherChip />
 
-        {/* Alertes : branchées plus tard sur /api/parcels/{id}/alerts */}
-        <button
-          type="button"
-          disabled
-          title="Notifications (bientôt disponible)"
-          style={{
-            background: "transparent",
-            border: "none",
-            fontSize: 17,
-            cursor: "not-allowed",
-            opacity: 0.4,
-            padding: 4,
-          }}
-        >
-          🔔
-        </button>
+        <AlertsBell />
 
         <UserMenu />
       </div>

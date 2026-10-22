@@ -284,6 +284,17 @@ export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps
           <span style={{ fontSize: 17 }}>🌿</span>
           {!collapsed && <span>Cultures</span>}
         </button>
+
+        {/* ---- Employés ---- */}
+        <button
+          type="button"
+          style={itemStyle(location.pathname === "/employes")}
+          onClick={() => navigate("/employes")}
+          title="Employés"
+        >
+          <span style={{ fontSize: 17 }}>👥</span>
+          {!collapsed && <span>Employés</span>}
+        </button>
       </nav>
 
       <div style={{ flexShrink: 0, borderTop: "1px solid #e5e7eb", padding: 8 }}>

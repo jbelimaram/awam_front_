@@ -10,7 +10,7 @@ import ParcelFormModal from "../components/Dashboard/ParcelFormModal";
 import ParcelSelectors from "../components/Dashboard/ParcelSelectors";
 import ParcelInfoCard from "../components/Dashboard/ParcelInfoCard";
 import IndicesChartCard from "../components/Dashboard/IndicesChartCard";
-import EmployeeAssignmentCard from "../components/Dashboard/EmployeeAssignmentCard";
+import EmployeesLinkCard from "../components/Dashboard/EmployeesLinkCard";
 import OperationHistoryCard from "../components/Dashboard/OperationHistoryCard";
 import FarmFormModal from "../components/Dashboard/FarmFormModal";
 import { SelectionProvider } from "../context/SelectionContext";
@@ -157,7 +157,7 @@ function DashboardContent({ showFarmForm, onCloseFarmForm }: DashboardContentPro
               <IndicesChartCard />
             </div>
             <div style={{ ...cardStyle, flex: 1, minWidth: 0, overflowY: "auto" }}>
-              <EmployeeAssignmentCard />
+              <EmployeesLinkCard />
             </div>
           </div>
         )}

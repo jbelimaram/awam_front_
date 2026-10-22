@@ -45,9 +45,8 @@ interface CropRow {
   planting_date: string;
   density: string;
   status: CropStatus;
+  /** Récolte prévue : TOUJOURS calculée par le back, jamais saisie */
   expected_harvest_date: string;
-  /** La date prévue n'est envoyée que si l'utilisateur l'a modifiée */
-  expected_touched: boolean;
   actual_harvest_date: string;
   /** Quantité récoltée : obligatoire pour une annuelle « Récoltée »,
    *  facultative pour la dernière récolte d'une pérenne */
@@ -108,7 +107,6 @@ const newRow = (code: string): CropRow => ({
   density: "",
   status: "active",
   expected_harvest_date: "",
-  expected_touched: false,
   actual_harvest_date: "",
   actual_yield: "",
   yield_unit: "kg",
@@ -137,7 +135,6 @@ const existingRow = (crop: Crop): CropRow => ({
   status_initial: shownStatus(crop),
   end_date: crop.end_date ?? "",
   expected_harvest_date: crop.expected_harvest_date ?? "",
-  expected_touched: false,
   actual_harvest_date: crop.actual_harvest_date ?? "",
   actual_yield: crop.actual_yield != null ? String(crop.actual_yield) : "",
   yield_unit: crop.yield_unit ?? "kg",
@@ -289,14 +286,14 @@ export default function CropFormModal({
           ...r,
           ...patch,
           dirty: r.id !== undefined ? true : r.dirty,
-          needs_preview: recalc && !r.expected_touched ? true : r.needs_preview,
+          needs_preview: recalc ? true : r.needs_preview,
         };
       })
     );
 
   // Récolte prévue calculée par le back dès la saisie de la plantation.
-  // Elle s'affiche dans le champ ; non modifiée par l'utilisateur, elle
-  // n'est pas envoyée, et le back recalcule la même à l'enregistrement.
+  // Elle s'affiche dans le champ, en lecture seule : elle n'est jamais
+  // envoyée, le back recalcule la même à l'enregistrement.
   useEffect(() => {
     const pending = rows.filter((r) => r.needs_preview);
     if (pending.length === 0) return;
@@ -307,11 +304,9 @@ export default function CropFormModal({
         if (cancelled) return;
         setRows((prev) =>
           prev.map((r) =>
-            r.key === row.key && !r.expected_touched
+            r.key === row.key
               ? { ...r, expected_harvest_date: date, preview_reason: reason, needs_preview: false }
-              : r.key === row.key
-                ? { ...r, needs_preview: false }
-                : r
+              : r
           )
         );
       };
@@ -429,7 +424,6 @@ export default function CropFormModal({
 
       for (const row of toUpdate) {
         const harvested = row.status === "harvested";
-        const perennial = speciesByCode(row.code)?.crop_type !== "annual";
         const statusChanged = row.status !== row.status_initial;
         const payload: CropUpdatePayload = {
           variety: row.variety.trim() || null,
@@ -444,11 +438,6 @@ export default function CropFormModal({
         if (statusChanged) payload.status = row.status;
         // Culture terminée : sa date de fin (effacée par le back sinon)
         if (row.status === "ended") payload.end_date = row.end_date || null;
-        // Récolte prévue saisie à la main : une annuelle récoltée n'en a
-        // plus, une pérenne récoltée garde sa prochaine récolte
-        if (row.expected_touched && (!harvested || perennial)) {
-          payload.expected_harvest_date = row.expected_harvest_date || null;
-        }
         if (harvested && (row.harvest_touched || statusChanged)) {
           payload.actual_harvest_date = row.actual_harvest_date || null;
           payload.actual_yield = toYield(row.actual_yield);
@@ -469,11 +458,6 @@ export default function CropFormModal({
           in_production: speciesByCode(row.code)?.is_orchard ? row.in_production : false,
           status: row.status,
           notes: row.notes.trim() || null,
-          // Vide = calculée par le back depuis le calendrier
-          expected_harvest_date:
-            row.expected_touched && (!harvested || speciesByCode(row.code)?.crop_type !== "annual")
-              ? row.expected_harvest_date || null
-              : undefined,
           // Culture créée déjà terminée : sa date de fin
           ...(row.status === "ended" ? { end_date: row.end_date } : {}),
           // Culture créée déjà récoltée : le back exige la date et la
@@ -685,15 +669,14 @@ export default function CropFormModal({
               />
             ) : (
               <DateField
-                label={harvestedPerennial ? "Prochaine récolte prévue" : "Récolte prévue"}
+                label={`${harvestedPerennial ? "Prochaine récolte prévue" : "Récolte prévue"} · calculée`}
                 value={row.expected_harvest_date}
-                onChange={(v, valid) => {
-                  updateRow(row.key, { expected_harvest_date: v, expected_touched: true });
-                  setDate(dateKey("expected_harvest_date"), valid);
+                onChange={() => {
+                  /* Lecture seule : la récolte prévue est toujours calculée */
                 }}
-                disabled={submitting || (harvested && !perennial)}
+                disabled
                 labelStyle={labelStyle}
-                inputStyle={harvested && !perennial ? disabledFieldStyle : fieldStyle}
+                inputStyle={disabledFieldStyle}
               />
             )}
 
@@ -756,13 +739,13 @@ export default function CropFormModal({
                 : harvestedPerennial
                 ? "Plante pérenne : la récolte ouvre le cycle suivant. Elle est affichée « Récoltée » " +
                   "le jour de la récolte, puis de nouveau « En cours » ; la prochaine récolte est calculée " +
-                  "depuis cette date, vous pouvez la corriger."
+                  "automatiquement depuis cette date."
                 : harvested
                 ? "Récoltée : le cycle de cette culture annuelle est terminé."
                 : row.preview_reason
                   ? row.preview_reason
                   : "* Obligatoire. Une date approximative suffit (ex. 1er janvier de l'année de plantation). " +
-                    "La récolte prévue se calcule depuis cette date ; vous pouvez la corriger."}
+                    "La récolte prévue se calcule automatiquement depuis cette date."}
             </p>
           </div>
         )}

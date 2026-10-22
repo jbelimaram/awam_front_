@@ -8,8 +8,9 @@ import { useEffect, useState } from "react";
  *   "indices" : indices du jour calculés
  *   "history" : un lot de l'historique de 3 ans enregistré
  *   "failed"  : l'analyse a échoué
+ *   "alerts"  : une alerte a été créée, mise à jour ou fermée
  */
-export type ParcelEventKind = "rasters" | "indices" | "history" | "failed";
+export type ParcelEventKind = "rasters" | "indices" | "history" | "failed" | "alerts";
 
 export interface ParcelEvent {
   parcel_id: number;

@@ -94,3 +94,21 @@ export interface CropNeeds {
   /** Culture clôturée : aucun besoin calculé, et pourquoi */
   closed_reason?: string | null;
 }
+
+/**
+ * Interprétation, déjà enregistrée, de l'analyse d'une date pour une
+ * culture (GET /api/parcels/{id}/interpretations).
+ */
+export interface ParcelInterpretation {
+  crop_id: number;
+  crop_label: string;
+  scene_date: string;
+  stage_label?: string | null;
+  severity: Severity;
+  severity_label: string;
+  /** Lecture du diagnostic, ex. « Stress hydrique précoce » */
+  reading?: string | null;
+  /** Période de coupe ou de récolte : la baisse est attendue */
+  cultural_drop: boolean;
+  indicators: Indicator[];
+}
