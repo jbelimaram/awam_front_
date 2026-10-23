@@ -5,7 +5,9 @@ import ParcelSelectors from "../components/Dashboard/ParcelSelectors";
 import EmployeeFormModal from "../components/Employees/EmployeeFormModal";
 import EmployeeInfoTab from "../components/Employees/EmployeeInfoTab";
 import EmployeeTeamTab from "../components/Employees/EmployeeTeamTab";
-import TaskTypesModal from "../components/Employees/TaskTypesModal";
+import TeamsBoard from "../components/Employees/TeamsBoard";
+import EmployeeTasksTab from "../components/Planning/EmployeeTaskTab";
+import PlanningBoard from "../components/Planning/PlanningBoard";
 import { SelectionProvider } from "../context/SelectionContext";
 import { employeeService } from "../Services/employeeService";
 import { farmEmployeeService } from "../Services/farmEmployeeService";
@@ -27,9 +29,7 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 /** Ce que contiendront les onglets des prochaines étapes */
-const NEXT_STEPS: Record<Exclude<TabKey, "info" | "teams">, string> = {
-  planning:
-    "Planifier les affectations des équipes et des employés selon les besoins des parcelles, sous-parcelles et cultures.",
+const NEXT_STEPS: Record<Exclude<TabKey, "info" | "teams" | "planning">, string> = {
   interventions: "Enregistrer les interventions et les tâches : réalisées, à réaliser, à entretenir.",
 };
 
@@ -44,8 +44,9 @@ const groupTitle: React.CSSProperties = {
   fontSize: 11, fontWeight: 600, color: "#6b7280", margin: "8px 0 2px", padding: "0 10px",
 };
 
-/** Le coordinateur d'abord, puis les membres par ordre alphabétique */
+/** Actifs d'abord ; parmi eux, le coordinateur, puis l'ordre alphabétique */
 const byRoleThenName = (a: FarmEmployee, b: FarmEmployee) =>
+  Number(a.employee.is_active === false) - Number(b.employee.is_active === false) ||
   Number(b.role === "coordinateur") - Number(a.role === "coordinateur") ||
   a.employee.full_name.localeCompare(b.employee.full_name, "fr");
 
@@ -56,7 +57,7 @@ function EmployeesContent({
   showFarmForm: boolean;
   onCloseFarmForm: () => void;
 }) {
-  const { farms, selectedFarmId, refreshFarms } = useSelection();
+  const { farms, selectedFarmId, refreshFarms, selectedParcel, parcelsForSelectedFarm } = useSelection();
   const { showToast } = useToast();
 
   const [links, setLinks] = useState<FarmEmployee[]>([]);
@@ -66,7 +67,8 @@ function EmployeesContent({
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<FarmEmployee | null>(null);
   const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
-  const [showTaskTypes, setShowTaskTypes] = useState(false);
+  /** Zone principale : fiche d'un employé, équipes, ou planification */
+  const [view, setView] = useState<"employee" | "teams" | "planning">("employee");
 
   const farmName = farms.find((f) => f.id === selectedFarmId)?.name ?? "";
   /**
@@ -132,6 +134,34 @@ function EmployeesContent({
     loadTaskTypes();
   }, [loadTaskTypes]);
 
+  /**
+   * Rend l'employé inactif, ou le réactive, dans TOUTES ses fermes.
+   * Inactif : il quitte ses équipes et n'est plus coordinateur ; son
+   * historique est conservé.
+   */
+  const handleToggleActive = async () => {
+    if (!selected) return;
+    const name = selected.employee.full_name;
+    const deactivate = selected.employee.is_active !== false;
+    if (
+      deactivate &&
+      !window.confirm(
+        `Rendre ${name} inactif ?\n\nDans toutes vos fermes, il quittera son équipe` +
+          `${selected.role === "coordinateur" ? " et ne sera plus coordinateur" : ""}, et ne recevra plus de nouvelle tâche. ` +
+          "Son historique est conservé, et vous pourrez le réactiver.",
+      )
+    ) {
+      return;
+    }
+    try {
+      await employeeService.update(selected.employee.id, { is_active: !deactivate });
+      showToast("success", deactivate ? `${name} est maintenant inactif.` : `${name} est réactivé : affectez-le à une équipe si besoin.`);
+      loadEmployees(selected.id);
+    } catch (e) {
+      showToast("error", e instanceof Error ? e.message : "Changement de statut impossible.");
+    }
+  };
+
   const handleDelete = async () => {
     if (!selected) return;
     const name = selected.employee.full_name;
@@ -185,6 +215,28 @@ function EmployeesContent({
             </button>
           </div>
 
+          {selectedFarmId && (
+            <div role="tablist" aria-label="Vue" style={{ display: "flex", gap: 4, background: "#f3f4f6", borderRadius: 8, padding: 3, marginBottom: 8 }}>
+              {([["employee", "Employés"], ["teams", "Équipes"], ["planning", "Planification"]] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  aria-selected={view === key}
+                  onClick={() => setView(key)}
+                  style={{
+                    flex: 1, border: "none", borderRadius: 6, padding: "5px 0", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                    background: view === key ? "#ffffff" : "transparent",
+                    color: view === key ? "#1b4332" : "#6b7280",
+                    boxShadow: view === key ? "0 1px 2px rgba(0,0,0,0.1)" : "none",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {!selectedFarmId && <p style={muted}>Sélectionnez une ferme dans la barre latérale.</p>}
           {selectedFarmId && loading && <p style={muted}>Chargement…</p>}
           {selectedFarmId && !loading && links.length === 0 && (
@@ -196,28 +248,34 @@ function EmployeesContent({
               <div key={group.key || "sans-equipe"}>
                 <div style={groupTitle}>{group.title}</div>
                 {group.items.map((l) => {
-              const isActive = l.id === selectedLinkId;
-              return (
-                <button
-                  key={l.id}
-                  type="button"
-                  onClick={() => setSelectedLinkId(l.id)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 8, padding: "7px 10px",
-                    borderRadius: 6, border: "none",
-                    background: isActive ? "#1b4332" : "transparent",
-                    color: isActive ? "#ffffff" : "#111827",
-                    cursor: "pointer", fontSize: 13, textAlign: "left", width: "100%",
-                  }}
-                >
-                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {l.employee.full_name}
-                  </span>
-                  {l.role === "coordinateur" && (
-                    <span style={{ fontSize: 11, opacity: isActive ? 0.85 : 0.6 }}>Coordinateur</span>
-                  )}
-                </button>
-              );
+                  const isActive = l.id === selectedLinkId;
+                  return (
+                    <button
+                      key={l.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedLinkId(l.id);
+                        setView("employee");
+                      }}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 8, padding: "7px 10px",
+                        borderRadius: 6, border: "none",
+                        background: isActive ? "#1b4332" : "transparent",
+                        color: isActive ? "#ffffff" : l.employee.is_active === false ? "#9ca3af" : "#111827",
+                        cursor: "pointer", fontSize: 13, textAlign: "left", width: "100%",
+                      }}
+                    >
+                      <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {l.employee.full_name}
+                      </span>
+                      {l.role === "coordinateur" && (
+                        <span style={{ fontSize: 11, opacity: isActive ? 0.85 : 0.6 }}>Coordinateur</span>
+                      )}
+                      {l.employee.is_active === false && (
+                        <span style={{ fontSize: 11, opacity: isActive ? 0.85 : 1, color: isActive ? undefined : "#b45309" }}>Inactif</span>
+                      )}
+                    </button>
+                  );
                 })}
               </div>
             ))}
@@ -227,7 +285,35 @@ function EmployeesContent({
 
       {/* ---- Zone principale ---- */}
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 12, overflowY: "auto" }}>
-        {!selected ? (
+        {view === "planning" && selectedFarmId ? (
+          <div style={cardStyle}>
+            {selectedParcel ? (
+              <PlanningBoard
+                parcelId={selectedParcel.id}
+                parcelName={selectedParcel.nom}
+                links={links}
+                taskTypes={taskTypes}
+              />
+            ) : (
+              <p style={{ ...muted, fontFamily: "system-ui, sans-serif" }}>
+                Sélectionnez une parcelle, dans la carte Parcelles à gauche, pour voir et planifier ses tâches.
+              </p>
+            )}
+          </div>
+        ) : view === "teams" && selectedFarmId ? (
+          <div style={cardStyle}>
+            <TeamsBoard
+              farmId={selectedFarmId}
+              farmName={farmName}
+              links={links}
+              taskTypes={taskTypes}
+              onChanged={() => {
+                loadEmployees();
+                loadTaskTypes();
+              }}
+            />
+          </div>
+        ) : !selected ? (
           <div style={{ ...cardStyle, fontFamily: "system-ui, sans-serif", fontSize: 13, color: "#6b7280" }}>
             {selectedFarmId
               ? "Sélectionnez un employé, ou ajoutez-en un pour gérer ses équipes, ses affectations et ses interventions."
@@ -264,18 +350,24 @@ function EmployeesContent({
                   setShowForm(true);
                 }}
                 onDelete={handleDelete}
+                onToggleActive={handleToggleActive}
               />
-            ) : tab === "teams" && selectedFarmId ? (
+            ) : tab === "planning" ? (
+              <EmployeeTasksTab
+                employeeId={selected.employee.id}
+                taskTypes={taskTypes}
+                parcels={parcelsForSelectedFarm}
+                onOpenPlanning={() => setView("planning")}
+              />
+            ) : tab === "teams" ? (
               <EmployeeTeamTab
                 link={selected}
                 links={links}
-                farmId={selectedFarmId}
                 farmName={farmName}
                 taskTypes={taskTypes}
-                onChanged={() => loadEmployees(selected.id)}
-                onManageTypes={() => setShowTaskTypes(true)}
+                onOpenTeams={() => setView("teams")}
               />
-            ) : tab === "teams" ? null : (
+            ) : (
               <p style={{ ...muted, fontFamily: "system-ui, sans-serif" }}>
                 <strong style={{ color: "#374151" }}>Prochaine étape.</strong> {NEXT_STEPS[tab]}
               </p>
@@ -288,17 +380,6 @@ function EmployeesContent({
         isOpen={showFarmForm}
         onClose={onCloseFarmForm}
         onSaved={(farmId) => refreshFarms(farmId)}
-      />
-
-      <TaskTypesModal
-        isOpen={showTaskTypes}
-        onClose={() => setShowTaskTypes(false)}
-        taskTypes={taskTypes}
-        onChanged={() => {
-          loadTaskTypes();
-          // Un renommage change aussi l'équipe des employés concernés
-          loadEmployees();
-        }}
       />
 
       {selectedFarmId && (

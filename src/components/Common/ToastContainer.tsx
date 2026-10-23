@@ -9,10 +9,19 @@ const VARIANT_STYLES_AUTH: Record<string, string> = {
   loading: 'bg-olive text-white',
 };
 
+/**
+ * Couleurs des messages hors pages d'authentification.
+ *
+ * La zone des messages est placée À LA RACINE de l'application, en dehors
+ * de toutes les pages : les variables de couleur définies dans une page
+ * (ex. .profile-page dans ProfilePage.css) ne l'atteignent pas. Chaque
+ * variable a donc une couleur de secours, aux couleurs d'AWAM ; sans elle,
+ * le fond serait transparent et le texte blanc, invisible sur fond blanc.
+ */
 const VARIANT_STYLES_PROFILE: Record<string, string> = {
-  error: 'bg-[var(--accent-chaud)] text-white',
-  success: 'bg-[var(--accent)] text-white',
-  loading: 'bg-[var(--texte-secondaire)] text-white',
+  error: 'bg-[var(--accent-chaud,#b42318)] text-white',
+  success: 'bg-[var(--accent,#1b4332)] text-white',
+  loading: 'bg-[var(--texte-secondaire,#4b5563)] text-white',
 };
 
 export default function ToastContainer() {
@@ -25,7 +34,10 @@ export default function ToastContainer() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 w-full max-w-sm px-4">
+    // z-[2000] : au-dessus de tout le reste de l'application (barre du haut
+    // à 100, menu du compte à 200, fenêtres à 500, panneau de la cloche à
+    // 1000) ; sinon la barre du haut recouvrirait les messages
+    <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[2000] flex flex-col gap-2 w-full max-w-sm px-4">
       {toasts.map((toast) => (
         <div
           key={toast.id}

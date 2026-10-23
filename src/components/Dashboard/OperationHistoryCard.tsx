@@ -91,7 +91,9 @@ function EmployeeHistory({ parcelId }: { parcelId: number | null }) {
   // Regroupement par jour, du plus récent au plus ancien
   const days = useMemo(() => {
     const map = new Map<string, Activity[]>();
+    // L'historique ne reçoit que des tâches faites, qui ont une date réelle
     for (const a of activities) {
+      if (!a.performed_at) continue;
       const key = a.performed_at.slice(0, 10);
       const list = map.get(key);
       if (list) list.push(a);
@@ -117,7 +119,7 @@ function EmployeeHistory({ parcelId }: { parcelId: number | null }) {
               marginBottom: 4,
             }}
           >
-            {dayLabel(items[0].performed_at)}
+            {dayLabel(items[0].performed_at ?? day)}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
