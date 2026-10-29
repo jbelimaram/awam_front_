@@ -4,6 +4,7 @@ import type {
   ActivityCompletePayload,
   ActivityCreatePayload,
   ActivityUpdatePayload,
+  FarmHistoryItem,
 } from "../types/activity";
 
 // api/routes/activities.py, monté sous /api
@@ -20,7 +21,9 @@ export const activityService = {
   /** Planification d'une parcelle entre deux dates (AAAA-MM-JJ) */
   planning: (parcelId: number, start: string, end: string): Promise<Activity[]> =>
     api.get<Activity[]>(`/api/parcels/${parcelId}/planning?start=${start}&end=${end}`),
-
+  /** Opérations faites d'une ferme sur les N derniers jours */
+  farmHistory: (farmId: number, days: number): Promise<FarmHistoryItem[]> =>
+    api.get<FarmHistoryItem[]>(`/api/farms/${farmId}/history?days=${days}`),
   /** Tâches en cours d'un employé : à réaliser et à entretenir */
   employeeTasks: (employeeId: number): Promise<Activity[]> =>
     api.get<Activity[]>(`/api/employees/${employeeId}/tasks`),

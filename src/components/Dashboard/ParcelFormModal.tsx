@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import Modal from "../Common/Modal";
+import Dialog from "../Common/Dialog";
+import { SECTION_TINT, dialogButton, dialogCard, dialogInput, dialogLabel, dialogSection } from "../Common/dialogStyles";
 import CultureSelect from "./CultureSelect";
 import type { DashboardParcel } from "../../types/dashboard";
 import type { GeoJsonGeometry, ParcelUpdatePayload } from "../../types/parcel";
@@ -44,20 +45,7 @@ const EMPTY_FORM: FormState = {
   status: "active",
 };
 
-const fieldStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "6px 9px",
-  borderRadius: 6,
-  border: "1px solid #4b5563",
-  marginTop: 3,
-  background: "#111827",
-  color: "#ffffff",
-  fontSize: 13,
-  fontFamily: "inherit",
-  boxSizing: "border-box",
-};
-
-const labelStyle: React.CSSProperties = { fontSize: 12, color: "#d1d5db" };
+const twoColumns: React.CSSProperties = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 };
 
 export default function ParcelFormModal({
   isOpen,
@@ -139,93 +127,103 @@ export default function ParcelFormModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isCreate ? "Nouvelle parcelle" : "Modifier la parcelle"}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <label style={labelStyle}>
-          Nom
+    <Dialog
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isCreate ? "Nouvelle parcelle" : "Modifier la parcelle"}
+      subtitle={isCreate ? "Le contour dessiné sur la carte sera enregistré avec elle" : parcel?.nom}
+      width={430}
+      footer={
+        <>
+          <button type="button" onClick={onClose} disabled={submitting} style={dialogButton.secondary}>
+            Annuler
+          </button>
+          <button type="button" onClick={handleSubmit} disabled={submitting} style={dialogButton.primary}>
+            {submitting ? "Enregistrement…" : "Enregistrer"}
+          </button>
+        </>
+      }
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <label style={dialogLabel}>
+          Nom *
           <input
             type="text"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             disabled={submitting}
-            style={fieldStyle}
+            placeholder="Ex. Kemel 1"
+            style={dialogInput}
           />
         </label>
 
         {/* Cultures : choix dans le référentiel, plusieurs possibles */}
-        <div style={labelStyle}>
+        <div style={dialogLabel}>
           Cultures
           <CultureSelect
             value={form.culture_type}
             onChange={(v) => setForm({ ...form, culture_type: v })}
             disabled={submitting}
-            fieldStyle={fieldStyle}
+            fieldStyle={dialogInput}
           />
         </div>
 
-        {/* Deux colonnes : le formulaire reste court malgré tous les champs */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-
-          <label style={labelStyle}>
-            Statut
-            <select
-              value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value as "active" | "inactive" })}
-              disabled={submitting}
-              style={fieldStyle}
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </label>
-
-          <label style={labelStyle}>
-            Type de sol
-            <input
-              type="text"
-              value={form.soil_type}
-              onChange={(e) => setForm({ ...form, soil_type: e.target.value })}
-              disabled={submitting}
-              style={fieldStyle}
-            />
-          </label>
-
-          <label style={labelStyle}>
-            Irrigation
-            <input
-              type="text"
-              value={form.irrigation_type}
-              onChange={(e) => setForm({ ...form, irrigation_type: e.target.value })}
-              disabled={submitting}
-              style={fieldStyle}
-            />
-          </label>
+        <div style={dialogCard(SECTION_TINT.green)}>
+          <div style={dialogSection("#3B6D11")}><span aria-hidden>🌾</span> Parcelle</div>
+          <div style={twoColumns}>
+            <label style={dialogLabel}>
+              Statut
+              <select
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value as "active" | "inactive" })}
+                disabled={submitting}
+                style={dialogInput}
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </label>
+            <label style={dialogLabel}>
+              Type de sol
+              <input
+                type="text"
+                value={form.soil_type}
+                onChange={(e) => setForm({ ...form, soil_type: e.target.value })}
+                disabled={submitting}
+                placeholder="Ex. Sableuse"
+                style={dialogInput}
+              />
+            </label>
+            <label style={dialogLabel}>
+              Irrigation
+              <input
+                type="text"
+                value={form.irrigation_type}
+                onChange={(e) => setForm({ ...form, irrigation_type: e.target.value })}
+                disabled={submitting}
+                placeholder="Ex. Goutte-à-goutte"
+                style={dialogInput}
+              />
+            </label>
+          </div>
         </div>
 
-        {/* Analyses de laboratoire : repliées par défaut, uniquement à la création */}
+        {/* Analyse de laboratoire : facultative, uniquement à la création */}
         {isCreate && (
-          <div style={{ borderTop: "1px solid #374151", paddingTop: 10 }}>
+          <div style={{ borderTop: "1px solid #eef0ee", paddingTop: 10 }}>
             <button
               type="button"
               onClick={() => setShowAnalysis((v) => !v)}
               disabled={submitting}
               style={{
-                width: "100%",
-                background: "transparent",
-                border: "none",
-                color: "#d1d5db",
-                fontSize: 12,
-                textAlign: "left",
-                cursor: "pointer",
-                padding: 0,
-                display: "flex",
-                justifyContent: "space-between",
+                width: "100%", background: "transparent", border: "none", padding: 0, cursor: "pointer",
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                fontSize: 13, fontWeight: 600, color: "#3B6D11", fontFamily: "inherit",
               }}
             >
-              <span>Analyses de sol et d'eau (optionnel)</span>
-              <span>{showAnalysis ? "▲" : "▼"}</span>
+              <span>🧪 Analyse de sol et d'eau <span style={{ fontWeight: 400, color: "#9ca3af" }}>(facultatif)</span></span>
+              <span style={{ color: "#9ca3af" }}>{showAnalysis ? "▲" : "▼"}</span>
             </button>
-
             {showAnalysis && (
               <div style={{ marginTop: 10 }}>
                 <AnalysisFields form={analysis} onChange={setAnalysis} disabled={submitting} />
@@ -234,25 +232,8 @@ export default function ParcelFormModal({
           </div>
         )}
 
-        {error && <p style={{ color: "#f87171", fontSize: 12 }}>{error}</p>}
-
-        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-          <button
-            onClick={onClose}
-            disabled={submitting}
-            style={{ flex: 1, background: "transparent", color: "#d1d5db", border: "1px solid #4b5563", borderRadius: 6, padding: "8px 0", cursor: "pointer" }}
-          >
-            Annuler
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={submitting}
-            style={{ flex: 1, background: "#16a34a", color: "#ffffff", border: "none", borderRadius: 6, padding: "8px 0", fontWeight: 600, cursor: submitting ? "wait" : "pointer" }}
-          >
-            {submitting ? "…" : "Enregistrer"}
-          </button>
-        </div>
+        {error && <p style={{ color: "#b91c1c", fontSize: 12.5, margin: 0 }}>{error}</p>}
       </div>
-    </Modal>
+    </Dialog>
   );
 }

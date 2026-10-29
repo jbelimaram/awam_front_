@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import Modal from "../Common/Modal";
+import Dialog from "../Common/Dialog";
+import { PEOPLE, dialogButton, dialogCard, dialogInput, dialogLabel, dialogSection } from "../Common/dialogStyles";
 import { farmEmployeeService } from "../../Services/farmEmployeeService";
-import { taskTypeService } from "../../Services/taskTypeService";
 import { useToast } from "../../hooks/useToast";
 import type { FarmEmployee } from "../../types/farmEmployee";
 import type { TaskType } from "../../types/taskType";
@@ -23,12 +23,7 @@ interface TeamMembersModalProps {
 /** Valeur de la liste pour un nom tapé librement */
 const OTHER = "__autre__";
 
-const fieldStyle: React.CSSProperties = {
-  width: "100%", padding: "6px 9px", borderRadius: 6, border: "1px solid #4b5563", marginTop: 3,
-  background: "#111827", color: "#ffffff", fontSize: 13, fontFamily: "inherit", boxSizing: "border-box",
-};
-const labelStyle: React.CSSProperties = { fontSize: 12, color: "#d1d5db", display: "block" };
-const hintStyle: React.CSSProperties = { fontSize: 11, color: "#9ca3af", display: "block", marginTop: 3 };
+const hintStyle: React.CSSProperties = { fontSize: 11, color: "#6b7280", display: "block", marginTop: 4 };
 
 /**
  * Création ou modification d'une équipe, en une seule fenêtre.
@@ -37,8 +32,8 @@ const hintStyle: React.CSSProperties = { fontSize: 11, color: "#9ca3af", display
  * dans cette ferme), ou tapé librement avec « Autre : nouveau nom… ».
  * Changer le nom d'une équipe existante la fait passer, avec ses membres,
  * sous ce nouveau nom, DANS CETTE FERME seulement : le type prédéfini,
- * commun à toutes les fermes, n'est jamais modifié. Un ancien nom libre que
- * plus aucune ferme n'utilise est retiré de la liste.
+ * commun à toutes les fermes, n'est jamais modifié. Un nom personnalisé que
+ * plus aucune équipe ni tâche ne porte disparaît seul de la liste.
  *
  * MEMBRES : tous les employés de la ferme se COCHENT ; en modification, les
  * membres actuels sont déjà cochés :
@@ -50,7 +45,6 @@ export default function TeamMembersModal({
 }: TeamMembersModalProps) {
   const { showToast } = useToast();
   const isNew = !team;
-  const type = team ? taskTypes.find((t) => t.code === team) : undefined;
 
   const currentMembers = useMemo(
     () => new Set(team ? links.filter((l) => l.team === team).map((l) => l.id) : []),
@@ -123,20 +117,11 @@ export default function TeamMembersModal({
     setSaving(true);
     setError(null);
     try {
-      const code = targetCode ?? (await taskTypeService.create(typed)).code;
+      // Nouveau nom : le back le ramène à une écriture existante s'il y en a une
+      const code = targetCode ?? typed;
 
       if (toRemove.length) await farmEmployeeService.assignTeam(farmId, null, toRemove);
       if (toAssign.length) await farmEmployeeService.assignTeam(farmId, code, toAssign);
-
-      // Ancien nom libre devenu inutile : retiré de la liste s'il n'est plus
-      // utilisé dans aucune ferme (sinon le back refuse, et il reste)
-      if (renamed && type && !type.predefined && type.id != null) {
-        try {
-          await taskTypeService.remove(type.id);
-        } catch {
-          // Encore utilisé dans une autre ferme : il reste disponible
-        }
-      }
 
       const label = `Équipe ${teamLabel(code, [...taskTypes, { id: null, code, label: code, predefined: false }]).toLowerCase()}`;
       showToast("success", isNew ? `${label} créée.` : `${label} enregistrée.`);
@@ -149,20 +134,32 @@ export default function TeamMembersModal({
     }
   };
 
-  const title = isNew
-    ? `Nouvelle équipe · ${farmName}`
-    : `Modifier · Équipe ${teamLabel(team, taskTypes).toLowerCase()}`;
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "system-ui, sans-serif", fontSize: 13, color: "#e5e7eb" }}>
-        <label style={labelStyle}>
+    <Dialog
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isNew ? "Nouvelle équipe" : "Modifier l'équipe"}
+      subtitle={isNew ? farmName : `Équipe ${teamLabel(team, taskTypes).toLowerCase()} · ${farmName}`}
+      width={420}
+      footer={
+        <>
+          <button type="button" onClick={onClose} disabled={saving} style={dialogButton.secondary}>
+            Annuler
+          </button>
+          <button type="button" onClick={handleSave} disabled={saving} style={dialogButton.primary}>
+            {saving ? "Enregistrement…" : isNew ? "Créer l'équipe" : "Enregistrer"}
+          </button>
+        </>
+      }
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <label style={dialogLabel}>
           Nom de l'équipe *
           <select
             value={choice}
             onChange={(e) => { setChoice(e.target.value); setError(null); }}
             disabled={saving}
-            style={fieldStyle}
+            style={dialogInput}
             aria-label="Nom de l'équipe"
           >
             {isNew && <option value="">Choisir…</option>}
@@ -180,7 +177,7 @@ export default function TeamMembersModal({
               onChange={(e) => { setCustomName(e.target.value); setError(null); }}
               placeholder="Ex. Paillage"
               disabled={saving}
-              style={fieldStyle}
+              style={dialogInput}
               aria-label="Nouveau nom de l'équipe"
             />
           )}
@@ -189,46 +186,45 @@ export default function TeamMembersModal({
           )}
         </label>
 
-        <div>
-          <div style={{ ...labelStyle, marginBottom: 6 }}>
-            Membres <span style={{ color: "#9ca3af" }}>· {checked.size} coché{checked.size > 1 ? "s" : ""}</span>
+        {/* Membres : à cocher, dans un encadré teinté */}
+        <div style={dialogCard(PEOPLE.tint)}>
+          <div style={dialogSection(PEOPLE.text)}>
+            <span aria-hidden>👥</span> Membres
+            <span style={{ fontWeight: 400, color: "#6b7280" }}>· {checked.size} coché{checked.size > 1 ? "s" : ""}</span>
           </div>
           {candidates.length === 0 ? (
-            <p style={{ margin: 0, color: "#9ca3af" }}>Aucun employé dans cette ferme.</p>
+            <p style={{ margin: 0, fontSize: 12.5, color: "#6b7280" }}>Aucun employé dans cette ferme.</p>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: 280, overflowY: "auto" }}>
-              {candidates.map((l) => (
-                <label
-                  key={l.id}
-                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 8px", borderRadius: 6, cursor: "pointer", background: checked.has(l.id) ? "#1f3a2e" : "transparent" }}
-                >
-                  <input type="checkbox" checked={checked.has(l.id)} onChange={() => toggle(l.id)} disabled={saving} />
-                  <span style={{ flex: 1 }}>
-                    {l.employee.full_name}
-                    {l.role === "coordinateur" && <span style={{ color: "#9ca3af" }}> · coordinateur</span>}
-                  </span>
-                  {l.team && l.team !== team && (
-                    <span style={{ fontSize: 11, color: "#fbbf24" }}>
-                      actuellement dans Équipe {teamLabel(l.team, taskTypes).toLowerCase()}
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 260, overflowY: "auto" }}>
+              {candidates.map((l) => {
+                const on = checked.has(l.id);
+                return (
+                  <label
+                    key={l.id}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 8, cursor: "pointer",
+                      background: "#fff", border: `1px solid ${on ? PEOPLE.border : "#e5e7eb"}`, fontSize: 12.5, color: "#111827",
+                    }}
+                  >
+                    <input type="checkbox" checked={on} onChange={() => toggle(l.id)} disabled={saving} style={{ accentColor: PEOPLE.accent }} />
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      {l.employee.full_name}
+                      {l.role === "coordinateur" && <span style={{ color: "#6b7280" }}> · coordinateur</span>}
                     </span>
-                  )}
-                </label>
-              ))}
+                    {l.team && l.team !== team && (
+                      <span style={{ fontSize: 11, color: "#b45309", background: "#FAEEDA", borderRadius: 999, padding: "1px 8px", whiteSpace: "nowrap" }}>
+                        dans Équipe {teamLabel(l.team, taskTypes).toLowerCase()}
+                      </span>
+                    )}
+                  </label>
+                );
+              })}
             </div>
           )}
         </div>
 
-        {error && <p style={{ color: "#f87171", fontSize: 12, margin: 0 }}>{error}</p>}
-
-        <div style={{ display: "flex", gap: 8 }}>
-          <button type="button" onClick={onClose} disabled={saving} style={{ flex: 1, background: "transparent", color: "#d1d5db", border: "1px solid #4b5563", borderRadius: 6, padding: "8px 0", cursor: "pointer" }}>
-            Annuler
-          </button>
-          <button type="button" onClick={handleSave} disabled={saving} style={{ flex: 1, background: "#16a34a", color: "#fff", border: "none", borderRadius: 6, padding: "8px 0", fontWeight: 600, cursor: saving ? "wait" : "pointer" }}>
-            {saving ? "…" : isNew ? "Créer l'équipe" : "Enregistrer"}
-          </button>
-        </div>
+        {error && <p style={{ color: "#b91c1c", fontSize: 12.5, margin: 0 }}>{error}</p>}
       </div>
-    </Modal>
+    </Dialog>
   );
 }

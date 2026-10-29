@@ -1,4 +1,5 @@
 import type { ParcelAnalysisPayload } from "../../types/parcelAnalysis";
+import { SECTION_TINT, dialogCard, dialogLabel, dialogSection } from "../Common/dialogStyles";
 
 /** État du formulaire : des chaînes, car les champs numériques peuvent être vides. */
 export interface AnalysisFormState {
@@ -54,34 +55,17 @@ export function toAnalysisPayload(form: AnalysisFormState): ParcelAnalysisPayloa
   };
 }
 
-/** Champs compacts : neuf champs tiennent sur cinq lignes. */
-const fieldStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "5px 7px",
-  borderRadius: 6,
-  border: "1px solid #4b5563",
-  marginTop: 2,
-  background: "#111827",
-  color: "#ffffff",
-  fontSize: 12,
-  fontFamily: "inherit",
-  boxSizing: "border-box",
+/** Le cadre d'un champ : la saisie à gauche, l'unité à droite */
+const box: React.CSSProperties = {
+  display: "flex", alignItems: "center", marginTop: 3, border: "1px solid #d1d5db", borderRadius: 7,
+  background: "#fff", padding: "0 9px", boxSizing: "border-box",
 };
-
-const labelStyle: React.CSSProperties = {
-  fontSize: 11,
-  color: "#d1d5db",
-  minWidth: 0,
+const input: React.CSSProperties = {
+  flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent",
+  padding: "6px 0", fontSize: 12.5, color: "#111827", fontFamily: "inherit",
 };
-
-const sectionStyle: React.CSSProperties = {
-  fontSize: 10,
-  fontWeight: 600,
-  color: "#9ca3af",
-  textTransform: "uppercase",
-  letterSpacing: 0.5,
-  marginTop: 2,
-};
+const unitStyle: React.CSSProperties = { fontSize: 11.5, color: "#9ca3af", marginLeft: 6, flexShrink: 0 };
+const twoColumns: React.CSSProperties = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 };
 
 interface AnalysisFieldsProps {
   form: AnalysisFormState;
@@ -90,92 +74,62 @@ interface AnalysisFieldsProps {
 }
 
 /**
- * Champs d'analyse de laboratoire (sol et eau), réutilisés par le formulaire
- * de parcelle et par l'ajout d'une analyse depuis la fiche.
- * Tous les champs sont facultatifs : une analyse peut être partielle.
+ * Champs d'une analyse de laboratoire, sol et eau d'irrigation, dans le
+ * style clair des fenêtres d'AWAM : sections 🌱 Sol et 💧 Eau d'irrigation
+ * dans des encadrés teintés (vert, bleu), unité affichée dans chaque champ.
  *
- * Mise en page compacte : date et type de sol sur une ligne, les quatre
- * mesures du sol sur une ligne, les deux mesures de l'eau sur une ligne.
+ * Utilisés par la fenêtre « Nouvelle analyse » de la fiche, et par la
+ * fenêtre de création de parcelle. Tous les champs sont facultatifs.
  */
 export default function AnalysisFields({ form, onChange, disabled = false }: AnalysisFieldsProps) {
   const set = (key: keyof AnalysisFormState) => (e: React.ChangeEvent<HTMLInputElement>) =>
     onChange({ ...form, [key]: e.target.value });
 
-  const numberField = (
-    key: keyof AnalysisFormState,
-    label: string,
-    placeholder: string,
-    step = "0.01",
-    title?: string
-  ) => (
-    <label style={labelStyle} title={title}>
+  /** Un champ, avec son unité affichée à droite, dans le champ */
+  const field = (key: keyof AnalysisFormState, label: string, unit = "", type = "number", placeholder = "") => (
+    <label style={dialogLabel}>
       {label}
-      <input
-        type="number"
-        step={step}
-        value={form[key]}
-        onChange={set(key)}
-        disabled={disabled}
-        placeholder={placeholder}
-        style={fieldStyle}
-      />
+      <span className="awam-field" style={box}>
+        <input
+          type={type}
+          step={type === "number" ? "0.01" : undefined}
+          value={form[key]}
+          onChange={set(key)}
+          disabled={disabled}
+          placeholder={placeholder}
+          style={input}
+        />
+        {unit && <span style={unitStyle}>{unit}</span>}
+      </span>
     </label>
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-      {/* Date + type de sol */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
-        <label style={labelStyle}>
-          Date de l'analyse
-          <input
-            type="date"
-            value={form.analyzed_at}
-            onChange={set("analyzed_at")}
-            disabled={disabled}
-            style={fieldStyle}
-          />
-        </label>
-        <label style={labelStyle}>
-          Type de sol
-          <input
-            type="text"
-            value={form.soil_type}
-            onChange={set("soil_type")}
-            disabled={disabled}
-            placeholder="Ex. Sableuse"
-            style={fieldStyle}
-          />
-        </label>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={twoColumns}>
+        {field("analyzed_at", "Date de l'analyse", "", "date")}
+        {field("soil_type", "Type de sol", "", "text", "Ex. Sableuse")}
       </div>
 
-      {/* Sol : quatre mesures sur une ligne */}
-      <div style={sectionStyle}>Sol</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
-        {numberField("soil_ph", "pH", "7.5", "0.1", "pH du sol")}
-        {numberField("soil_humidity_pct", "Humid. %", "2.0", "0.01", "Humidité du sol (%)")}
-        {numberField("soil_organic_matter_pct", "M.O. %", "1.0", "0.01", "Matière organique (%)")}
-        {numberField("soil_salinity_g_l", "Sel g/L", "0.10", "0.01", "Salinité (g/L)")}
+      <div style={dialogCard(SECTION_TINT.green)}>
+        <div style={dialogSection("#3B6D11")}><span aria-hidden>🌱</span> Sol</div>
+        <div style={twoColumns}>
+          {field("soil_ph", "pH", "", "number", "7,5")}
+          {field("soil_organic_matter_pct", "Matière organique", "%", "number", "1,0")}
+          {field("soil_humidity_pct", "Humidité", "%", "number", "18")}
+          {field("soil_salinity_g_l", "Salinité", "g/L", "number", "0,10")}
+        </div>
       </div>
 
-      {/* Eau d'irrigation */}
-      <div style={sectionStyle}>Eau d'irrigation</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
-        {numberField("water_ph", "pH de l'eau", "7.8", "0.1")}
-        {numberField("water_nitrates_mg_l", "Nitrates (mg/L)", "21.6")}
+      <div style={dialogCard(SECTION_TINT.blue)}>
+        <div style={dialogSection("#185FA5")}><span aria-hidden>💧</span> Eau d'irrigation</div>
+        <div style={twoColumns}>
+          {field("water_ph", "pH", "", "number", "7,8")}
+          {field("water_nitrates_mg_l", "Nitrates", "mg/L", "number", "21,6")}
+        </div>
       </div>
 
-      <label style={labelStyle}>
-        Observations
-        <input
-          type="text"
-          value={form.notes}
-          onChange={set("notes")}
-          disabled={disabled}
-          placeholder="Diagnostic, recommandations…"
-          style={fieldStyle}
-        />
-      </label>
+      {field("notes", "Observations", "", "text", "Diagnostic, recommandations…")}
     </div>
   );
 }

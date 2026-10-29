@@ -14,7 +14,8 @@
   --accent-chaud: #D99B7C;
   --accent-chaud-hover: #C98568;
 
-  min-height: 100vh;
+  /* Dans le cadre commun : la hauteur de la zone de contenu, plus l'écran entier */
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -66,17 +67,18 @@
   color: var(--texte-secondaire) !important;
 }
 
-/* Champs de saisie : fond subtil, texte foncé */
-.profile-page input,
-.profile-page textarea,
-.profile-page select {
+/* Champs de saisie : fond subtil, texte foncé.
+   Sauf dans les fenêtres claires (.awam-dialog), qui ont leur propre style. */
+.profile-page input:not(.awam-dialog input),
+.profile-page textarea:not(.awam-dialog textarea),
+.profile-page select:not(.awam-dialog select) {
   background-color: var(--fond-page) !important;
   border-color: var(--bordure) !important;
   color: var(--texte-principal) !important;
 }
 
-.profile-page input::placeholder,
-.profile-page textarea::placeholder {
+.profile-page input:not(.awam-dialog input)::placeholder,
+.profile-page textarea:not(.awam-dialog textarea)::placeholder {
   color: var(--texte-secondaire) !important;
 }
 

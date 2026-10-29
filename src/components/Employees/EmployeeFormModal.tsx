@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import Modal from "../Common/Modal";
+import Dialog from "../Common/Dialog";
+import { PEOPLE, dialogButton, dialogCard, dialogInput, dialogLabel, dialogSection } from "../Common/dialogStyles";
 import { employeeService } from "../../Services/employeeService";
 import { farmEmployeeService } from "../../Services/farmEmployeeService";
 import { useToast } from "../../hooks/useToast";
@@ -16,20 +17,8 @@ interface EmployeeFormModalProps {
   onSaved: (linkId: number) => void;
 }
 
-const fieldStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "6px 9px",
-  borderRadius: 6,
-  border: "1px solid #4b5563",
-  marginTop: 3,
-  background: "#111827",
-  color: "#ffffff",
-  fontSize: 13,
-  fontFamily: "inherit",
-  boxSizing: "border-box",
-};
-const labelStyle: React.CSSProperties = { fontSize: 12, color: "#d1d5db", display: "block" };
-const hintStyle: React.CSSProperties = { fontSize: 11, color: "#9ca3af", margin: "3px 0 0" };
+const hintStyle: React.CSSProperties = { fontSize: 11, color: "#6b7280", margin: "6px 0 0" };
+const twoColumns: React.CSSProperties = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 };
 
 /**
  * Ajout ou modification d'un employé de la ferme : nom, téléphone, rôle.
@@ -93,42 +82,60 @@ export default function EmployeeFormModal({ isOpen, onClose, farmId, farmName, l
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={link ? "Modifier l'employé" : `Ajouter un employé · ${farmName}`}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "system-ui, sans-serif" }}>
-        <label style={labelStyle}>
-          Nom complet *
-          <input
-            type="text"
-            value={fullName}
-            onChange={(e) => {
-              setFullName(e.target.value);
-              setError(null);
-            }}
-            placeholder="Ahmed Ben Salah"
-            disabled={submitting}
-            style={fieldStyle}
-          />
-        </label>
+    <Dialog
+      isOpen={isOpen}
+      onClose={onClose}
+      title={link ? "Modifier l'employé" : "Ajouter un employé"}
+      subtitle={link ? `${link.employee.full_name} · ${farmName}` : farmName}
+      width={400}
+      footer={
+        <>
+          <button type="button" onClick={onClose} disabled={submitting} style={dialogButton.secondary}>
+            Annuler
+          </button>
+          <button type="button" onClick={handleSubmit} disabled={submitting} style={dialogButton.primary}>
+            {submitting ? "Enregistrement…" : "Enregistrer"}
+          </button>
+        </>
+      }
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={twoColumns}>
+          <label style={dialogLabel}>
+            Nom complet *
+            <input
+              type="text"
+              value={fullName}
+              onChange={(e) => {
+                setFullName(e.target.value);
+                setError(null);
+              }}
+              placeholder="Ahmed Ben Salah"
+              disabled={submitting}
+              style={dialogInput}
+            />
+          </label>
+          <label style={dialogLabel}>
+            Téléphone
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="20 123 456"
+              disabled={submitting}
+              style={dialogInput}
+            />
+          </label>
+        </div>
 
-        <label style={labelStyle}>
-          Téléphone
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="20 123 456"
-            disabled={submitting}
-            style={fieldStyle}
-          />
-        </label>
-
-        <label style={labelStyle}>
-          Rôle dans la ferme
+        <div style={dialogCard(PEOPLE.tint)}>
+          <div style={dialogSection(PEOPLE.text)}><span aria-hidden>🧑‍🌾</span> Rôle dans la ferme</div>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as FarmEmployeeRole)}
             disabled={submitting}
-            style={fieldStyle}
+            aria-label="Rôle dans la ferme"
+            style={{ ...dialogInput, marginTop: 0 }}
           >
             <option value="membre">Membre</option>
             <option value="coordinateur">Coordinateur</option>
@@ -138,29 +145,10 @@ export default function EmployeeFormModal({ isOpen, onClose, farmId, farmName, l
               Un seul coordinateur par ferme : l'actuel coordinateur de {farmName} repassera membre.
             </p>
           )}
-        </label>
-
-        {error && <p style={{ color: "#f87171", fontSize: 12, margin: 0 }}>{error}</p>}
-
-        <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={submitting}
-            style={{ flex: 1, background: "transparent", color: "#d1d5db", border: "1px solid #4b5563", borderRadius: 6, padding: "8px 0", cursor: "pointer" }}
-          >
-            Annuler
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={submitting}
-            style={{ flex: 1, background: "#16a34a", color: "#ffffff", border: "none", borderRadius: 6, padding: "8px 0", fontWeight: 600, cursor: submitting ? "wait" : "pointer" }}
-          >
-            {submitting ? "…" : "Enregistrer"}
-          </button>
         </div>
+
+        {error && <p style={{ color: "#b91c1c", fontSize: 12.5, margin: 0 }}>{error}</p>}
       </div>
-    </Modal>
+    </Dialog>
   );
 }

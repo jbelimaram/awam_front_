@@ -17,6 +17,8 @@ import { useToast } from "../hooks/useToast";
 import type { FarmEmployee } from "../types/farmEmployee";
 import type { TaskType } from "../types/taskType";
 import { teamLabel } from "../utils/teams";
+import EmployeesHistory from "../components/Employees/EmployeeHistory";
+
 
 type TabKey = "info" | "teams" | "planning" | "interventions";
 
@@ -68,7 +70,7 @@ function EmployeesContent({
   const [editing, setEditing] = useState<FarmEmployee | null>(null);
   const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
   /** Zone principale : fiche d'un employé, équipes, ou planification */
-  const [view, setView] = useState<"employee" | "teams" | "planning">("employee");
+  const [view, setView] = useState<"employee" | "teams" | "planning" | "history">("employee");
 
   const farmName = farms.find((f) => f.id === selectedFarmId)?.name ?? "";
   /**
@@ -216,22 +218,44 @@ function EmployeesContent({
           </div>
 
           {selectedFarmId && (
-            <div role="tablist" aria-label="Vue" style={{ display: "flex", gap: 4, background: "#f3f4f6", borderRadius: 8, padding: 3, marginBottom: 8 }}>
-              {([["employee", "Employés"], ["teams", "Équipes"], ["planning", "Planification"]] as const).map(([key, label]) => (
+                        <div
+              role="tablist"
+              aria-label="Vue"
+              // Deux par deux : chaque onglet a la place pour son icône et son nom complet
+              style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 4, background: "#f3f4f6", borderRadius: 10, padding: 4, marginBottom: 8 }}
+            >
+              {(
+                [
+                  ["employee", "Employés", "👤"],
+                  ["teams", "Équipes", "👥"],
+                  ["planning", "Planification", "📅"],
+                  ["history", "Historique", "🕘"],
+                ] as const
+              ).map(([key, label, icon]) => (
                 <button
                   key={key}
                   type="button"
                   role="tab"
                   aria-selected={view === key}
                   onClick={() => setView(key)}
+                  title={label}
                   style={{
-                    flex: 1, border: "none", borderRadius: 6, padding: "5px 0", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 6, minWidth: 0,
+                    border: "none", borderRadius: 7, padding: "7px 8px", cursor: "pointer", fontFamily: "inherit",
                     background: view === key ? "#ffffff" : "transparent",
                     color: view === key ? "#1b4332" : "#6b7280",
                     boxShadow: view === key ? "0 1px 2px rgba(0,0,0,0.1)" : "none",
                   }}
                 >
-                  {label}
+                  <span aria-hidden style={{ fontSize: 14, lineHeight: 1 }}>{icon}</span>
+                  <span
+                    style={{
+                      minWidth: 0, fontSize: 12.5, fontWeight: 600, lineHeight: 1.3,
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}
+                  >
+                    {label}
+                  </span>
                 </button>
               ))}
             </div>
@@ -285,7 +309,11 @@ function EmployeesContent({
 
       {/* ---- Zone principale ---- */}
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 12, overflowY: "auto" }}>
-        {view === "planning" && selectedFarmId ? (
+        {view === "history" && selectedFarmId ? (
+          <div style={cardStyle}>
+            <EmployeesHistory farmId={selectedFarmId} farmName={farmName} links={links} taskTypes={taskTypes} />
+          </div>
+        ) : view === "planning" && selectedFarmId ? (
           <div style={cardStyle}>
             {selectedParcel ? (
               <PlanningBoard

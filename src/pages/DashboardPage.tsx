@@ -10,7 +10,6 @@ import ParcelFormModal from "../components/Dashboard/ParcelFormModal";
 import ParcelSelectors from "../components/Dashboard/ParcelSelectors";
 import ParcelInfoCard from "../components/Dashboard/ParcelInfoCard";
 import IndicesChartCard from "../components/Dashboard/IndicesChartCard";
-import EmployeesLinkCard from "../components/Dashboard/EmployeesLinkCard";
 import OperationHistoryCard from "../components/Dashboard/OperationHistoryCard";
 import FarmFormModal from "../components/Dashboard/FarmFormModal";
 import { SelectionProvider } from "../context/SelectionContext";
@@ -90,7 +89,7 @@ function DashboardContent({ showFarmForm, onCloseFarmForm }: DashboardContentPro
         overflow: "hidden",
       }}
     >
-      {/* Colonne gauche : parcelles, fiche, historique */}
+      {/* Colonne gauche : parcelles et fiche de la parcelle */}
       {!mapFullscreen && (
         <div
           style={{
@@ -108,13 +107,11 @@ function DashboardContent({ showFarmForm, onCloseFarmForm }: DashboardContentPro
           <div style={cardStyle}>
             <ParcelInfoCard />
           </div>
-          <div style={cardStyle}>
-            <OperationHistoryCard />
-          </div>
         </div>
       )}
 
-      {/* Zone droite : carte en haut, indices + employés en dessous */}
+      {/* Zone droite : carte en haut ; indices et historique en dessous.
+          La gestion des employés a sa propre page (barre latérale). */}
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
         <div
           style={{
@@ -153,11 +150,13 @@ function DashboardContent({ showFarmForm, onCloseFarmForm }: DashboardContentPro
 
         {!mapFullscreen && (
           <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 12 }}>
-            <div style={{ ...cardStyle, flex: 1, minWidth: 0, overflowY: "auto" }}>
+                        {/* Indices : 60 % de la largeur */}
+            <div style={{ ...cardStyle, flex: 3, minWidth: 0, overflowY: "auto" }}>
               <IndicesChartCard />
             </div>
-            <div style={{ ...cardStyle, flex: 1, minWidth: 0, overflowY: "auto" }}>
-              <EmployeesLinkCard />
+            {/* Historique : 40 %, avec la place pour ses filtres et ses textes */}
+            <div style={{ ...cardStyle, flex: 2, minWidth: 300, overflowY: "auto" }}>
+              <OperationHistoryCard />
             </div>
           </div>
         )}

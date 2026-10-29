@@ -66,9 +66,9 @@ export default function VarietyField({
           title="Revenir à la liste"
           style={{
             background: "transparent",
-            border: "1px solid #4b5563",
-            borderRadius: 6,
-            color: "#d1d5db",
+            border: "1px solid #d1d5db",
+            borderRadius: 7,
+            color: "#4b5563",
             padding: "0 8px",
             marginTop: 3,
             cursor: "pointer",

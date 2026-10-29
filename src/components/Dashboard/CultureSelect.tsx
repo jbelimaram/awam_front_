@@ -101,8 +101,8 @@ export default function CultureSelect({ value, onChange, disabled = false, field
                 padding: "2px 4px 2px 9px",
                 borderRadius: 999,
                 fontSize: 12,
-                background: item.known ? "#14532d" : "#374151",
-                color: item.known ? "#ffffff" : "#d1d5db",
+                background: item.known ? "#EAF3DE" : "#f3f4f6",
+                color: item.known ? "#27500A" : "#4b5563",
                 fontStyle: item.known ? "normal" : "italic",
               }}
             >

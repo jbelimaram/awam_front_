@@ -21,6 +21,8 @@ export interface Activity {
   status: ActivityStatus;
   /** Date prévue (AAAA-MM-JJ) */
   planned_for?: string | null;
+  /** Heure prévue, facultative (HH:MM:SS) */
+  planned_time?: string | null;
   /** Date réelle : remplie quand la tâche est faite */
   performed_at?: string | null;
   crop_id?: number | null;
@@ -36,6 +38,8 @@ export interface ActivityCreatePayload {
   activity_type: string;
   status?: ActivityStatus;
   planned_for?: string | null;
+  /** Heure prévue, facultative (HH:MM:SS) */
+  planned_time?: string | null;
   /** Doit inclure un fuseau horaire */
   performed_at?: string;
   crop_id?: number | null;
@@ -49,6 +53,8 @@ export interface ActivityUpdatePayload {
   activity_type?: string;
   status?: ActivityStatus;
   planned_for?: string | null;
+  /** Heure prévue, facultative (HH:MM:SS) */
+  planned_time?: string | null;
   performed_at?: string;
   crop_id?: number | null;
   team?: string | null;
@@ -77,3 +83,9 @@ export const ACTIVITY_TYPES = [
 ] as const;
 
 export type ActivityType = (typeof ACTIVITY_TYPES)[number];
+
+/** Tâche faite d'une ferme (historique des opérations), avec sa parcelle et sa culture */
+export interface FarmHistoryItem extends Activity {
+  parcel_name: string;
+  crop_label?: string | null;
+}

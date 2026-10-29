@@ -20,6 +20,9 @@ interface SidebarProps {
  * Chaque ferme porte en permanence ✎ pour la modifier et 🗑 pour la
  * supprimer (après confirmation : la suppression efface aussi ses parcelles).
  */
+/** Pages qui affichent le contenu d'une ferme : on y change de ferme sur place */
+const FARM_PAGES = ["/", "/cultures", "/employes"];
+
 export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -221,7 +224,15 @@ export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps
                 >
                   <button
                     type="button"
-                    onClick={() => selectFarm(farm.id)}
+                    onClick={() => {
+                      // Page sans contenu de ferme (ex. Profil) : ouvrir la
+                      // page des fermes, avec cette ferme sélectionnée
+                      if (!FARM_PAGES.includes(location.pathname)) {
+                        navigate("/", { state: { farmId: farm.id } });
+                        return;
+                      }
+                      selectFarm(farm.id);
+                    }}
                     disabled={deleting}
                     style={{
                       ...subItemStyle(isActive),
@@ -298,6 +309,17 @@ export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps
       </nav>
 
       <div style={{ flexShrink: 0, borderTop: "1px solid #e5e7eb", padding: 8 }}>
+        {/* ---- Profil : le compte de l'utilisateur, juste au-dessus de la déconnexion ---- */}
+        <button
+          type="button"
+          style={itemStyle(location.pathname === "/profile")}
+          onClick={() => navigate("/profile")}
+          title="Profil"
+        >
+          <span style={{ fontSize: 16 }}>👤</span>
+          {!collapsed && <span>Profil</span>}
+        </button>
+
         <button
           type="button"
           onClick={handleLogout}

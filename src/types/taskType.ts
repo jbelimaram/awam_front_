@@ -1,12 +1,12 @@
 /**
- * Type de tâche : nomme les équipes (Équipe irrigation…) et, plus tard,
- * les tâches. Prédéfini (lecture seule) ou libre (créé par l'utilisateur,
- * valable pour toutes ses fermes).
+ * Type de tâche : nomme les tâches et les équipes. Prédéfini, ou
+ * personnalisé : tapé par l'utilisateur, proposé tant qu'une tâche ou une
+ * équipe le porte, dans toutes ses fermes.
  */
 export interface TaskType {
-  /** Identifiant du type libre ; null pour un type prédéfini */
+  /** Toujours vide : les types n'ont pas de table dédiée */
   id: number | null;
-  /** Valeur enregistrée comme équipe de l'employé */
+  /** Valeur enregistrée dans la tâche ou l'équipe */
   code: string;
   label: string;
   predefined: boolean;

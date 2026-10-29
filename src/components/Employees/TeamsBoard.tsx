@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { farmEmployeeService } from "../../Services/farmEmployeeService";
-import { taskTypeService } from "../../Services/taskTypeService";
 import { useToast } from "../../hooks/useToast";
 import type { FarmEmployee } from "../../types/farmEmployee";
 import type { TaskType } from "../../types/taskType";
@@ -81,7 +80,7 @@ export default function TeamsBoard({ farmId, farmName, links, taskTypes, onChang
   const removeMember = (l: FarmEmployee) =>
     run(() => farmEmployeeService.assignTeam(farmId, null, [l.id]), `${l.employee.full_name} est maintenant sans équipe.`);
 
-  const dissolveTeam = (code: string, type: TaskType | undefined, members: FarmEmployee[]) => {
+    const dissolveTeam = (code: string, members: FarmEmployee[]) => {
     const label = `Équipe ${teamLabel(code, taskTypes).toLowerCase()}`;
     const detail = members.length
       ? `Ses ${members.length} membre${members.length > 1 ? "s passeront" : " passera"} sans équipe.`
@@ -89,15 +88,8 @@ export default function TeamsBoard({ farmId, farmName, links, taskTypes, onChang
     if (!window.confirm(`Dissoudre ${label} à ${farmName} ?\n\n${detail}`)) return;
 
     run(async () => {
-      if (members.length) await farmEmployeeService.assignTeam(farmId, null, members.map((m) => m.id));
-      // Équipe libre : son type est retiré si plus aucune ferme ne l'utilise
-      if (type && !type.predefined && type.id != null) {
-        try {
-          await taskTypeService.remove(type.id);
-        } catch {
-          // Encore utilisée dans une autre ferme : le type reste disponible
-        }
-      }
+            // Un nom personnalisé que plus rien ne porte disparaît seul de la liste
+    if (members.length) await farmEmployeeService.assignTeam(farmId, null, members.map((m) => m.id));
     }, `${label} dissoute.`);
   };
 
@@ -125,7 +117,7 @@ export default function TeamsBoard({ farmId, farmName, links, taskTypes, onChang
         </p>
       )}
 
-      {teams.map(({ code, type, members }) => (
+      {teams.map(({ code, members }) => (
         <div key={code} style={cardStyle}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: members.length ? 8 : 0 }}>
             <strong style={{ flex: 1, fontSize: 14, color: "#111827" }}>
@@ -144,7 +136,7 @@ export default function TeamsBoard({ farmId, farmName, links, taskTypes, onChang
             </button>
             <button
               type="button"
-              onClick={() => dissolveTeam(code, type, members)}
+              onClick={() => dissolveTeam(code, members)}
               disabled={busy}
               style={{ ...iconButton, color: "#b91c1c", borderColor: "#fecaca" }}
               title="Dissoudre l'équipe"

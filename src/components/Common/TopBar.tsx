@@ -1,22 +1,39 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useSelection } from "../../hooks/useSelection";
 import { useWeather } from "../../hooks/useWeather";
 import AlertsBell from "./AlertsBell";
 import { weatherCodeToLabel, weatherCodeToIcon } from "../../utils/weatherCodeToLabel";
 
-/** Fil d'Ariane cliquable : Accueil > Ferme > Parcelle */
+/** Nom de chaque page, tel qu'il apparaît dans la barre latérale */
+const PAGE_LABELS: Record<string, string> = {
+  "/": "Fermes",
+  "/cultures": "Cultures",
+  "/employes": "Employés",
+  "/profile": "Profil",
+};
+
+/**
+ * Fil d'Ariane cliquable : Page > Ferme > Parcelle.
+ * Le premier niveau est le nom de la page où l'on se trouve (Fermes,
+ * Cultures, Employés) ; un clic dessus désélectionne ferme et parcelle.
+ */
 function Breadcrumb() {
   const { farms, selectedFarmId, selectedParcel, selectFarm, selectParcel } = useSelection();
+  const { pathname } = useLocation();
   const farm = farms.find((f) => f.id === selectedFarmId);
+  const page = pathname.replace(/\/+$/, "") || "/";
+  const pageLabel = PAGE_LABELS[page] ?? "Fermes";
+  /** Pages sans ferme ni parcelle : seulement le nom de la page */
+  const pageOnly = page === "/profile";
 
   // Chaque niveau ramène à l'étape correspondante de la sélection
   const items: { label: string; onClick: (() => void) | null }[] = [
     {
-      label: "Accueil",
+      label: pageLabel,
       onClick:
-        selectedFarmId !== null || selectedParcel
+        !pageOnly && (selectedFarmId !== null || selectedParcel)
           ? () => {
               selectParcel(null);
               selectFarm(null);
@@ -25,14 +42,14 @@ function Breadcrumb() {
     },
   ];
 
-  if (farm) {
+  if (farm && !pageOnly) {
     items.push({
       label: farm.name,
       onClick: selectedParcel ? () => selectParcel(null) : null,
     });
   }
 
-  if (selectedParcel) {
+  if (selectedParcel && !pageOnly) {
     items.push({ label: selectedParcel.nom, onClick: null });
   }
 

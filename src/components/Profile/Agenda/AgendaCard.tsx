@@ -161,16 +161,15 @@ export default function AgendaCard() {
         )}
       </div>
 
+      {/* Fenêtre centrée par-dessus la page : elle ne décale ni ne coupe plus rien */}
       {isModalOpen && (
-        <div className="absolute top-0 left-1/2 z-20 w-[420px]">
-          <EventModal
-            event={selectedEvent}
-            defaultStart={defaultStart}
-            onSave={handleSave}
-            onDelete={selectedEvent ? handleDelete : undefined}
-            onClose={() => setIsModalOpen(false)}
-          />
-        </div>
+        <EventModal
+          event={selectedEvent}
+          defaultStart={defaultStart}
+          onSave={handleSave}
+          onDelete={selectedEvent ? handleDelete : undefined}
+          onClose={() => setIsModalOpen(false)}
+        />
       )}
     </div>
   );

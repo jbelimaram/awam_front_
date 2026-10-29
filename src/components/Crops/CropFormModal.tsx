@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import DateField from "../Common/DateField";
-import Modal from "../Common/Modal";
+import Dialog from "../Common/Dialog";
+import { SECTION_TINT, dialogButton, dialogCard, dialogInput, dialogLabel, dialogSection } from "../Common/dialogStyles";
 import VarietyField from "./VarietyField";
 import { cropService } from "../../Services/cropService";
 import { api } from "../../Services/api";
@@ -173,25 +174,13 @@ const toYield = (v: string): number | null => {
   return v.trim() && Number.isFinite(n) ? n : null;
 };
 
-const fieldStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "6px 9px",
-  borderRadius: 6,
-  border: "1px solid #4b5563",
-  marginTop: 3,
-  background: "#111827",
-  color: "#ffffff",
-  fontSize: 13,
-  fontFamily: "inherit",
-  boxSizing: "border-box",
+const fieldStyle: React.CSSProperties = dialogInput;
+/** Champ en lecture seule (récolte prévue, calculée) : grisé */
+const disabledFieldStyle: React.CSSProperties = {
+  ...dialogInput, background: "#f3f4f6", color: "#6b7280", cursor: "not-allowed",
 };
-const disabledFieldStyle: React.CSSProperties = { ...fieldStyle, opacity: 0.45, cursor: "not-allowed" };
-const labelStyle: React.CSSProperties = { fontSize: 12, color: "#d1d5db" };
-const hintStyle: React.CSSProperties = { fontSize: 11, color: "#9ca3af", margin: "3px 0 0" };
-const sectionStyle: React.CSSProperties = {
-  fontSize: 11, fontWeight: 600, color: "#9ca3af",
-  textTransform: "uppercase", letterSpacing: 0.5, marginTop: 4,
-};
+const labelStyle: React.CSSProperties = dialogLabel;
+const hintStyle: React.CSSProperties = { fontSize: 11, color: "#6b7280", margin: "3px 0 0" };
 const iconButtonStyle: React.CSSProperties = {
   background: "none", border: "none", padding: "2px 4px",
   cursor: "pointer", fontSize: 13, lineHeight: 1,
@@ -506,10 +495,10 @@ export default function CropFormModal({
       <div
         key={row.key}
         style={{
-          border: `1px solid ${row.deleted ? "#7f1d1d" : isOpen ? "#4b5563" : "#374151"}`,
-          borderRadius: 7,
-          background: row.deleted ? "rgba(127,29,29,0.15)" : isOpen ? "#1f2937" : "transparent",
-          opacity: active || row.deleted ? 1 : 0.55,
+          border: `1px solid ${row.deleted ? "#fecaca" : isOpen ? "#b9d8c4" : "#e5e7eb"}`,
+          borderRadius: 8,
+          background: row.deleted ? "#fef2f2" : "#fff",
+          opacity: active || row.deleted ? 1 : 0.6,
         }}
       >
         {/* ---- Ligne résumée ---- */}
@@ -525,6 +514,7 @@ export default function CropFormModal({
                 if (!e.target.checked && openKey === row.key) setOpenKey(null);
               }}
               disabled={submitting}
+              style={{ accentColor: "#1b4332" }}
             />
           )}
 
@@ -535,7 +525,7 @@ export default function CropFormModal({
             style={{
               flex: 1, display: "flex", alignItems: "center", gap: 8,
               background: "none", border: "none", padding: 0, minWidth: 0,
-              color: "#ffffff", cursor: active ? "pointer" : "default",
+              color: "#111827", cursor: active ? "pointer" : "default",
               textAlign: "left", fontFamily: "inherit",
             }}
           >
@@ -550,13 +540,13 @@ export default function CropFormModal({
             <span
               style={{
                 fontSize: 11, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                color: row.deleted ? "#fca5a5" : row.dirty ? "#fbbf24" : "#9ca3af",
+                color: row.deleted ? "#b91c1c" : row.dirty ? "#b45309" : "#6b7280",
               }}
             >
               {rowSummary(row, Boolean(spec?.is_orchard))}
             </span>
             {!isExisting && active && (
-              <span style={{ fontSize: 11, color: "#9ca3af" }}>{isOpen ? "▾" : "▸"}</span>
+              <span style={{ fontSize: 11, color: "#6b7280" }}>{isOpen ? "▾" : "▸"}</span>
             )}
           </button>
 
@@ -569,7 +559,7 @@ export default function CropFormModal({
                   onClick={() => setOpenKey(isOpen ? null : row.key)}
                   disabled={submitting}
                   title={isOpen ? "Replier" : "Modifier"}
-                  style={{ ...iconButtonStyle, color: isOpen ? "#ffffff" : "#d1d5db" }}
+                  style={{ ...iconButtonStyle, color: isOpen ? "#111827" : "#6b7280" }}
                 >
                   {isOpen ? "▾" : "✎"}
                 </button>
@@ -579,7 +569,7 @@ export default function CropFormModal({
                 onClick={() => toggleDelete(row)}
                 disabled={submitting}
                 title={row.deleted ? "Annuler la suppression" : "Supprimer"}
-                style={{ ...iconButtonStyle, color: row.deleted ? "#d1d5db" : "#f87171", fontSize: row.deleted ? 11 : 13 }}
+                style={{ ...iconButtonStyle, color: row.deleted ? "#374151" : "#b91c1c", fontSize: row.deleted ? 11 : 13 }}
               >
                 {row.deleted ? "Annuler" : "🗑"}
               </button>
@@ -756,25 +746,41 @@ export default function CropFormModal({
   const title = `Cultures de ${suggestions?.parcel_name ?? "la parcelle"}`;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <Dialog
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      subtitle="Modifier, supprimer ou déclarer les cultures de la parcelle"
+      width={460}
+      footer={
+        <>
+          <button type="button" onClick={onClose} disabled={submitting} style={dialogButton.secondary}>
+            Annuler
+          </button>
+          <button type="button" onClick={handleSubmit} disabled={submitting || loading} style={dialogButton.primary}>
+            {submitting ? "Enregistrement…" : "Enregistrer"}
+          </button>
+        </>
+      }
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {loading && <p style={hintStyle}>Chargement des cultures de la parcelle…</p>}
 
         {/* ---- Cultures suivies : modifier / supprimer ---- */}
         {!loading && existing.length > 0 && (
-          <>
-            <div style={sectionStyle}>Cultures suivies</div>
+          <div style={{ ...dialogCard(SECTION_TINT.green), display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={dialogSection("#3B6D11")}><span aria-hidden>🌿</span> Cultures suivies</div>
             {existing.map(renderRow)}
-          </>
+          </div>
         )}
 
         {/* ---- À déclarer : création ---- */}
         {!loading && (
-          <>
-            <div style={sectionStyle}>À déclarer</div>
+          <div style={{ ...dialogCard("#f6f7f6"), display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={dialogSection("#374151")}><span aria-hidden>🌱</span> À déclarer</div>
 
             {declared.length === 0 && (
-              <p style={hintStyle}>
+              <p style={{ ...hintStyle, margin: 0 }}>
                 Aucune nouvelle culture lue sur la parcelle. Ajoutez une espèce ci-dessous.
               </p>
             )}
@@ -797,10 +803,11 @@ export default function CropFormModal({
                   type="button"
                   onClick={addSpecies}
                   disabled={!toAdd || submitting}
+                  title="Ajouter cette espèce"
                   style={{
-                    marginTop: 3, padding: "0 12px", borderRadius: 6, border: "none",
-                    background: "#16a34a", color: "#ffffff", fontWeight: 600,
-                    cursor: toAdd ? "pointer" : "not-allowed", opacity: toAdd ? 1 : 0.5,
+                    marginTop: 3, padding: "0 12px", borderRadius: 7, border: "none",
+                    background: "#1b4332", color: "#ffffff", fontWeight: 600,
+                    cursor: toAdd ? "pointer" : "not-allowed", opacity: toAdd ? 1 : 0.4,
                   }}
                 >
                   ＋
@@ -809,33 +816,16 @@ export default function CropFormModal({
             )}
 
             {suggestions && suggestions.unknown.length > 0 && (
-              <p style={{ ...hintStyle, color: "#fbbf24" }}>
+              <p style={{ ...hintStyle, color: "#b45309", margin: 0 }}>
                 Non reconnues dans le référentiel : {suggestions.unknown.join(", ")}
               </p>
             )}
-          </>
+          </div>
         )}
 
-        {error && <p style={{ color: "#f87171", fontSize: 12 }}>{error}</p>}
-
-        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-          <button
-            onClick={onClose}
-            disabled={submitting}
-            style={{ flex: 1, background: "transparent", color: "#d1d5db", border: "1px solid #4b5563", borderRadius: 6, padding: "8px 0", cursor: "pointer" }}
-          >
-            Annuler
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={submitting || loading}
-            style={{ flex: 1, background: "#16a34a", color: "#ffffff", border: "none", borderRadius: 6, padding: "8px 0", fontWeight: 600, cursor: submitting ? "wait" : "pointer" }}
-          >
-            {submitting ? "…" : "Enregistrer"}
-          </button>
-        </div>
+        {error && <p style={{ color: "#b91c1c", fontSize: 12.5, margin: 0 }}>{error}</p>}
       </div>
-    </Modal>
+    </Dialog>
   );
 }
 
@@ -853,7 +843,7 @@ function OrchardCheckbox({
     <label
       style={{
         display: "flex", alignItems: "flex-start", gap: 8,
-        fontSize: 12, color: "#d1d5db", cursor: "pointer",
+        fontSize: 12, color: "#374151", cursor: "pointer",
       }}
     >
       <input
@@ -861,11 +851,11 @@ function OrchardCheckbox({
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
         disabled={disabled}
-        style={{ marginTop: 2 }}
+        style={{ marginTop: 2, accentColor: "#1b4332" }}
       />
       <span>
         Verger en production
-        <span style={{ display: "block", fontSize: 11, color: "#9ca3af" }}>
+        <span style={{ display: "block", fontSize: 11, color: "#6b7280" }}>
           Cochez si les arbres donnent déjà une récolte.
         </span>
       </span>

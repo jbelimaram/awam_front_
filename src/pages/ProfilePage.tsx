@@ -1,4 +1,8 @@
 import { useEffect, useState } from 'react';
+import DashboardLayout from '../components/Dashboard/DashboardLayout';
+import FarmFormModal from '../components/Dashboard/FarmFormModal';
+import { SelectionProvider } from '../context/SelectionContext';
+import { useSelection } from '../hooks/useSelection';
 import { useNavigate } from 'react-router-dom';
 
 import ProfileCard, { type EditingField } from '../components/Profile/ProfileCard';
@@ -24,7 +28,7 @@ import {
 
 import './ProfilePage.css';
 
-export default function ProfilePage() {
+function ProfileContent() {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -201,4 +205,30 @@ export default function ProfilePage() {
       </div>
     </div>
   );
+}
+
+/**
+ * Page du compte, dans le cadre commun d'AWAM : barre latérale (fermes,
+ * cultures, employés) et barre du haut (fil d'Ariane, météo, alertes,
+ * menu du compte). Le contenu défile dans la zone centrale.
+ */
+export default function ProfilePage() {
+  const [showFarmForm, setShowFarmForm] = useState(false);
+
+  return (
+    <SelectionProvider>
+      <DashboardLayout onAddFarm={() => setShowFarmForm(true)}>
+        <div style={{ height: '100%', overflowY: 'auto' }}>
+          <ProfileContent />
+        </div>
+        <ProfileFarmForm isOpen={showFarmForm} onClose={() => setShowFarmForm(false)} />
+      </DashboardLayout>
+    </SelectionProvider>
+  );
+}
+
+/** « Ajouter une ferme » de la barre latérale, depuis la page du compte */
+function ProfileFarmForm({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { refreshFarms } = useSelection();
+  return <FarmFormModal isOpen={isOpen} onClose={onClose} onSaved={(farmId) => refreshFarms(farmId)} />;
 }

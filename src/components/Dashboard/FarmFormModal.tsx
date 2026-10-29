@@ -3,6 +3,8 @@ import { farmService } from "../../Services/farmService";
 import { useToast } from "../../hooks/useToast";
 import { geocodeLocation } from "../../utils/geocode";
 import type { Farm } from "../../types/farm";
+import Dialog from "../Common/Dialog";
+import { dialogButton, dialogInput, dialogLabel } from "../Common/dialogStyles";
 
 interface FarmFormModalProps {
   isOpen: boolean;
@@ -14,7 +16,7 @@ interface FarmFormModalProps {
 const EMPTY = { name: "", location: "" };
 
 /**
- * Création / modification d'une ferme.
+ * Création / modification d'une ferme, dans la fenêtre claire commune.
  * La position (latitude, longitude) sert à la météo du tableau de bord :
  * elle est déduite du lieu saisi, sans que l'utilisateur ait à la connaître.
  */
@@ -72,125 +74,54 @@ export default function FarmFormModal({ isOpen, onClose, farm = null, onSaved }:
     }
   };
 
-  const inputStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "8px 10px",
-    borderRadius: 8,
-    border: "1px solid #d1d5db",
-    fontSize: 14,
-    fontFamily: "inherit",
-    boxSizing: "border-box",
-  };
-
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 500,
-        padding: 16,
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: "#ffffff",
-          borderRadius: 12,
-          padding: 20,
-          width: "100%",
-          maxWidth: 380,
-          fontFamily: "system-ui, sans-serif",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: "#111827" }}>
-            {isEdit ? "Modifier la ferme" : "Nouvelle ferme"}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Fermer"
-            style={{ background: "transparent", border: "none", fontSize: 20, cursor: "pointer", color: "#6b7280" }}
-          >
-            ×
+    <Dialog
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEdit ? "Modifier la ferme" : "Nouvelle ferme"}
+      subtitle={isEdit ? farm?.name : "Ses parcelles s'ajoutent ensuite sur la carte"}
+      width={400}
+      footer={
+        <>
+          <button type="button" onClick={onClose} disabled={submitting} style={dialogButton.secondary}>
+            Annuler
           </button>
-        </div>
-
-        <form onSubmit={handleSubmit} noValidate>
-          <label style={{ display: "block", fontSize: 13, marginBottom: 4, color: "#374151" }}>
-            Nom de la ferme
-          </label>
+          <button type="submit" form="farm-form" disabled={submitting} style={dialogButton.primary}>
+            {submitting ? "Enregistrement…" : isEdit ? "Enregistrer" : "Créer"}
+          </button>
+        </>
+      }
+    >
+      <form id="farm-form" onSubmit={handleSubmit} noValidate style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <label style={dialogLabel}>
+          Nom de la ferme *
           <input
             autoFocus
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             disabled={submitting}
             maxLength={150}
-            style={{ ...inputStyle, marginBottom: 12 }}
+            placeholder="Ex. Sidi Mechreg"
+            style={dialogInput}
           />
+        </label>
 
-          <label style={{ display: "block", fontSize: 13, marginBottom: 4, color: "#374151" }}>
-            Lieu (optionnel)
-          </label>
+        <label style={dialogLabel}>
+          Lieu <span style={{ color: "#9ca3af" }}>(facultatif)</span>
           <input
             value={form.location}
             onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
             disabled={submitting}
             placeholder="Ex. Makthar, Siliana"
-            style={inputStyle}
+            style={dialogInput}
           />
-          <p style={{ fontSize: 11, color: "#6b7280", margin: "4px 0 12px" }}>
+          <span style={{ display: "block", fontSize: 11.5, color: "#6b7280", marginTop: 4 }}>
             Sert à afficher la météo de la ferme.
-          </p>
+          </span>
+        </label>
 
-          {error && (
-            <p style={{ fontSize: 13, color: "#b42318", marginBottom: 10 }}>{error}</p>
-          )}
-
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              type="submit"
-              disabled={submitting}
-              style={{
-                flex: 1,
-                padding: "9px 12px",
-                borderRadius: 8,
-                border: "none",
-                background: "#1b4332",
-                color: "#ffffff",
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: submitting ? "not-allowed" : "pointer",
-                opacity: submitting ? 0.6 : 1,
-              }}
-            >
-              {submitting ? "Enregistrement…" : isEdit ? "Enregistrer" : "Créer"}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              style={{
-                padding: "9px 14px",
-                borderRadius: 8,
-                border: "1px solid #d1d5db",
-                background: "#ffffff",
-                fontSize: 14,
-                cursor: "pointer",
-                color: "#374151",
-              }}
-            >
-              Annuler
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        {error && <p style={{ fontSize: 12.5, color: "#b91c1c", margin: 0 }}>{error}</p>}
+      </form>
+    </Dialog>
   );
 }

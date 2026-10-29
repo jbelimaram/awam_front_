@@ -1,4 +1,5 @@
-import { createContext, ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { createContext, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { farmService } from "../Services/farmService";
 import { dashboardService } from "../Services/dashboardService";
 import type { Farm } from "../types/farm";
@@ -32,6 +33,15 @@ export function SelectionProvider({ children }: SelectionProviderProps) {
   const [selectedParcelId, setSelectedParcelId] = useState<number | null>(null);
   const [loadingFarms, setLoadingFarms] = useState(false);
   const [loadingParcels, setLoadingParcels] = useState(false);
+  /**
+   * Ferme choisie sur une autre page (ex. depuis la barre latérale du
+   * Profil) et transmise par la navigation : elle est sélectionnée à
+   * l'ouverture, au lieu de la première de la liste.
+   */
+  const location = useLocation();
+  const requestedFarmId = (location.state as { farmId?: number } | null)?.farmId ?? null;
+  /** Ferme demandée par la dernière navigation, appliquée dès que la liste est chargée */
+  const pendingFarmId = useRef<number | null>(null);
 
   const refreshFarms = useCallback(async (selectNewestId?: number) => {
     setLoadingFarms(true);
@@ -41,14 +51,18 @@ export function SelectionProvider({ children }: SelectionProviderProps) {
       if (selectNewestId) {
         setSelectedFarmId(selectNewestId);
       } else {
-        setSelectedFarmId((prev) => (prev !== null && data.some((f) => f.id === prev) ? prev : data[0]?.id ?? null));
+        setSelectedFarmId((prev) => {
+          if (prev !== null && data.some((f) => f.id === prev)) return prev;
+          if (requestedFarmId !== null && data.some((f) => f.id === requestedFarmId)) return requestedFarmId;
+          return data[0]?.id ?? null;
+        });
       }
     } catch (e) {
       console.error("Erreur chargement fermes", e);
     } finally {
       setLoadingFarms(false);
     }
-  }, []);
+  }, [requestedFarmId]);
 
   const refreshParcels = useCallback(async (selectNewestId?: number) => {
     setLoadingParcels(true);
@@ -68,6 +82,20 @@ export function SelectionProvider({ children }: SelectionProviderProps) {
       setLoadingParcels(false);
     }
   }, []);
+
+  // Chaque navigation qui demande une ferme la sélectionne, une seule fois,
+  // même si la page était déjà ouverte ; ensuite, l'utilisateur choisit librement
+  useEffect(() => {
+    if (requestedFarmId !== null) pendingFarmId.current = requestedFarmId;
+  }, [location.key, requestedFarmId]);
+
+  useEffect(() => {
+    const id = pendingFarmId.current;
+    if (id !== null && farms.some((f) => f.id === id)) {
+      setSelectedFarmId(id);
+      pendingFarmId.current = null;
+    }
+  }, [farms, location.key]);
 
   useEffect(() => {
     refreshFarms();
