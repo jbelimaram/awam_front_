@@ -208,6 +208,7 @@ export default function CropFormModal({
   onSaved,
 }: CropFormModalProps) {
   const { showToast } = useToast();
+  const confirm = useConfirm();
 
   const [species, setSpecies] = useState<SpeciesOption[]>([]);
   const [suggestions, setSuggestions] = useState<CropSuggestions | null>(null);

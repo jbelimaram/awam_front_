@@ -95,6 +95,7 @@ const initials = (name: string) =>
  */
 export default function PlanningBoard({ parcelId, parcelName, links, taskTypes }: PlanningBoardProps) {
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const today = isoDay(new Date());
   const weekStart = isoDay(mondayOf(new Date()));
   const weekEnd = isoDay(addDays(mondayOf(new Date()), 6));

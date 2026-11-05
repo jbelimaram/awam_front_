@@ -38,6 +38,7 @@ const iconButton: React.CSSProperties = {
  */
 export default function TeamsBoard({ farmId, farmName, links, taskTypes, onChanged }: TeamsBoardProps) {
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const [modalTeam, setModalTeam] = useState<string | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
 

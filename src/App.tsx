@@ -33,7 +33,7 @@ export default function App() {
 
   return (
     <ToastProvider>
-     <ConfirmProvider></ConfirmProvider>
+      <ConfirmProvider>
       <AuthProvider>
         <BrowserRouter>
           <ToastContainer />

@@ -62,6 +62,7 @@ function EmployeesContent({
 }) {
   const { farms, selectedFarmId, refreshFarms, selectedParcel, parcelsForSelectedFarm } = useSelection();
   const { showToast } = useToast();
+  const confirm = useConfirm();
 
   const [links, setLinks] = useState<FarmEmployee[]>([]);
   const [selectedLinkId, setSelectedLinkId] = useState<number | null>(null);

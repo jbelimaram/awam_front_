@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useConfirm } from "../../hooks/useConfirm";
 import { parcelAnalysisService } from "../../Services/parcelAnalalysisService";
 import { useToast } from "../../hooks/useToast";
 import Dialog from "../Common/Dialog";
@@ -70,6 +71,7 @@ function toForm(a: ParcelAnalysis): AnalysisFormState {
  */
 export default function ParcelAnalysisPanel({ parcelId }: ParcelAnalysisPanelProps) {
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const [analyses, setAnalyses] = useState<ParcelAnalysis[]>([]);
   const [loading, setLoading] = useState(false);
   /** Fenêtre ouverte : ajout d'une analyse, ou modification de l'affichée */

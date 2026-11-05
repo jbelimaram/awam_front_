@@ -32,6 +32,7 @@ export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps
   const { farms, selectedFarmId, selectFarm, parcels, loadingFarms, refreshFarms, refreshParcels } =
     useSelection();
   const { showToast } = useToast();
+  const confirm = useConfirm();
 
   // Ferme ouverte dans le formulaire de modification
   const [editingFarm, setEditingFarm] = useState<Farm | null>(null);

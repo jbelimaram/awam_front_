@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useConfirm } from "../../hooks/useConfirm";
 import { activityService } from "../../Services/activityService";
 import { useToast } from "../../hooks/useToast";
 import type { Activity, FarmHistoryItem } from "../../types/activity";
@@ -86,6 +87,7 @@ function mostFrequent(values: string[]): [string, number] | null {
  */
 export default function EmployeesHistory({ farmId, farmName, links, taskTypes }: EmployeesHistoryProps) {
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const [days, setDays] = useState(30);
   const [items, setItems] = useState<FarmHistoryItem[] | null>(null);
   const [employee, setEmployee] = useState(ALL);
@@ -170,7 +172,10 @@ export default function EmployeesHistory({ farmId, farmName, links, taskTypes }:
     }
   };
   const remove = async (t: Activity) => {
-    if (!window.confirm(`Supprimer « ${label(t.activity_type)} » de l'historique ?`)) return;
+    if (!(await confirm({
+      title: `Supprimer « ${label(t.activity_type)} » de l'historique ?`,
+      message: "L'opération et ses employés seront retirés de l'historique.",
+    }))) return;
     try {
       await activityService.remove(t.id);
       showToast("success", "Opération supprimée.");

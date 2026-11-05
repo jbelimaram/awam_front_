@@ -49,6 +49,7 @@ export default function WateringsTab({
   parcelId, parcelName, parcelAreaM2,
 }: { parcelId: number; parcelName: string; parcelAreaM2: number | null }) {
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const [items, setItems] = useState<Watering[] | null>(null);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [crops, setCrops] = useState<Crop[]>([]);
@@ -79,7 +80,11 @@ export default function WateringsTab({
   }, [load]);
 
   const remove = async (w: Watering) => {
-    if (!window.confirm("Supprimer cet arrosage ?")) return;
+    const day = w.planned_for ?? (w.performed_at ? w.performed_at.slice(0, 10) : null);
+    if (!(await confirm({
+      title: "Supprimer cet arrosage ?",
+      message: `${w.equipment_name ?? "Sans équipement"}${day ? ` · ${shortDay(day)}` : ""}. L'arrosage et son eau seront retirés de l'historique.`,
+    }))) return;
     try {
       await irrigationService.removeWatering(w.id);
       showToast("success", "Arrosage supprimé.");

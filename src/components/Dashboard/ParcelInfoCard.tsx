@@ -42,6 +42,7 @@ const value: React.CSSProperties = {
 export default function ParcelInfoCard() {
   const { selectedParcel, refreshParcels, selectParcel } = useSelection();
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const [showEdit, setShowEdit] = useState(false);
   const [busy, setBusy] = useState(false);
   // État RÉEL de l'analyse : relu quand le back annonce une fin de
