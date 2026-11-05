@@ -12,6 +12,8 @@ const PAGE_LABELS: Record<string, string> = {
   "/cultures": "Cultures",
   "/employes": "Employés",
   "/profile": "Profil",
+  "/climat": "Projection climatique",
+  "/irrigation": "Irrigation",
 };
 
 /**
@@ -26,7 +28,8 @@ function Breadcrumb() {
   const page = pathname.replace(/\/+$/, "") || "/";
   const pageLabel = PAGE_LABELS[page] ?? "Fermes";
   /** Pages sans ferme ni parcelle : seulement le nom de la page */
-  const pageOnly = page === "/profile";
+  // Pages qui ne dépendent ni d'une ferme ni d'une parcelle : leur nom seul
+  const pageOnly = page === "/profile" || page === "/climat";
 
   // Chaque niveau ramène à l'étape correspondante de la sélection
   const items: { label: string; onClick: (() => void) | null }[] = [
@@ -101,11 +104,10 @@ function Breadcrumb() {
   );
 }
 
-/** Météo de la ferme sélectionnée */
 function WeatherChip() {
   const { farms, selectedFarmId } = useSelection();
   const farm = farms.find((f) => f.id === selectedFarmId);
-  const { weather, loading } = useWeather(farm?.latitude, farm?.longitude);
+  const { weather, loading, error } = useWeather(farm?.latitude, farm?.longitude);
 
   const hasCoords = farm != null && farm.latitude != null && farm.longitude != null;
   const ready = hasCoords && !loading && weather != null;
@@ -116,8 +118,11 @@ function WeatherChip() {
       translate="no"
       title={
         ready
-          ? `${weatherCodeToLabel(weather.weather_code)} · vent ${weather.wind_speed ?? "—"} km/h · pluie ${weather.precipitation ?? 0} mm`
-          : undefined
+          ? `${weatherCodeToLabel(weather.weather_code)} · vent ${weather.wind_speed ?? "—"} km/h · pluie ${weather.precipitation ?? 0} mm` +
+            (weather.stale ? ` · météo d'il y a ${weather.age_minutes ?? 0} min, Open-Meteo est momentanément indisponible` : "")
+          : error
+            ? "Le service météo ne répond pas pour le moment : la météo reviendra toute seule."
+            : undefined
       }
       style={{
         display: "flex",
@@ -129,12 +134,18 @@ function WeatherChip() {
       }}
     >
       {!hasCoords ? null : !ready ? (
-        <span style={{ opacity: 0.6 }}>…</span>
+        error && !loading ? (
+          <span style={{ opacity: 0.6, fontSize: 12.5 }}>Météo indisponible</span>
+        ) : (
+          <span style={{ opacity: 0.6 }}>…</span>
+        )
       ) : (
         <>
-          <span style={{ fontSize: 16 }}>{weatherCodeToIcon(weather.weather_code)}</span>
-          <span>{`${weather.temperature ?? "—"}°C`}</span>
-          <span style={{ opacity: 0.6 }}>{`· ${weather.humidity ?? "—"}%`}</span>
+          <span style={{ fontSize: 16, opacity: weather.stale ? 0.6 : 1 }}>{weatherCodeToIcon(weather.weather_code)}</span>
+          <span style={{ opacity: weather.stale ? 0.6 : 1 }}>{`${weather.temperature ?? "—"}°C`}</span>
+          <span style={{ opacity: 0.6 }}>
+            {weather.stale ? `· il y a ${weather.age_minutes ?? 0} min` : `· ${weather.humidity ?? "—"}%`}
+          </span>
         </>
       )}
     </span>

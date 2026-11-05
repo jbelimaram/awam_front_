@@ -315,6 +315,35 @@ export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps
           <span style={{ fontSize: 17 }}>👥</span>
           {!collapsed && <span>Employés</span>}
         </button>
+        
+        
+        {/* ---- Irrigation ---- */}
+        <button
+          type="button"
+          style={itemStyle(location.pathname === "/irrigation")}
+          onClick={() => navigate("/irrigation")}
+          // Survol ou focus : la page se précharge, le clic l'ouvre aussitôt
+          onMouseEnter={() => preloadPath("/irrigation")}
+          onFocus={() => preloadPath("/irrigation")}
+          title="Irrigation"
+        >
+          <span style={{ fontSize: 17 }}>💧</span>
+          {!collapsed && <span>Irrigation</span>}
+        </button>
+
+        {/* ---- Projection climatique ---- */}
+        <button
+          type="button"
+          style={itemStyle(location.pathname === "/climat")}
+          onClick={() => navigate("/climat")}
+          // Survol ou focus : la page se précharge, le clic l'ouvre aussitôt
+          onMouseEnter={() => preloadPath("/climat")}
+          onFocus={() => preloadPath("/climat")}
+          title="Projection climatique"
+        >
+          <span style={{ fontSize: 17 }}>🌍</span>
+          {!collapsed && <span>Projection climatique</span>}
+        </button>
       </nav>
 
       <div style={{ flexShrink: 0, borderTop: "1px solid #e5e7eb", padding: 8 }}>

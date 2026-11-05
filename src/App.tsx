@@ -6,6 +6,7 @@ import ToastContainer from './components/Common/ToastContainer';
 import PageLoader from './components/Common/PageLoader';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import {
+  ClimatePage,
   CropsPage,
   DashboardPage,
   EmployeesPage,
@@ -13,6 +14,7 @@ import {
   LoginPage,
   ProfilePage,
   RegisterPage,
+  IrrigationPage,
 } from './routes/lazyPages';
 import { preloadMainPagesWhenIdle } from './routes/preload';
 
@@ -41,6 +43,8 @@ export default function App() {
               <Route path="/reinitialiser-mot-de-passe/:token" element={<ForgotPasswordPage />} />
               <Route path="/cultures" element={<ProtectedRoute><CropsPage /></ProtectedRoute>} />
               <Route path="/employes" element={<ProtectedRoute><EmployeesPage /></ProtectedRoute>} />
+              <Route path="/climat" element={<ProtectedRoute><ClimatePage /></ProtectedRoute>} />
+              <Route path="/irrigation" element={<ProtectedRoute><IrrigationPage /></ProtectedRoute>} />
               <Route
                 path="/"
                 element={
