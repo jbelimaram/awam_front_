@@ -7,6 +7,7 @@ import { cropService } from "../../Services/cropService";
 import { api } from "../../Services/api";
 import { useToast } from "../../hooks/useToast";
 import { shownStatus } from "../../utils/cropStatus";
+import { useConfirm } from "../../hooks/useConfirm";
 import type {
   Crop,
   CropStatus,
@@ -395,10 +396,10 @@ export default function CropFormModal({
 
     if (toDelete.length > 0) {
       const names = toDelete.map((r) => speciesByCode(r.code)?.label ?? r.code).join(", ");
-      const confirmed = window.confirm(
-        `${toDelete.length > 1 ? "Ces cultures seront supprimées" : "Cette culture sera supprimée"} ` +
-          `avec tout son historique : ${names}. Continuer ?`
-      );
+      const confirmed = await confirm({
+        title: toDelete.length > 1 ? "Supprimer ces cultures ?" : "Supprimer cette culture ?",
+        message: `${names}. ${toDelete.length > 1 ? "Elles seront supprimées" : "Elle sera supprimée"} avec tout son historique.`,
+      });
       if (!confirmed) return;
     }
 

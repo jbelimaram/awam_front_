@@ -137,8 +137,10 @@ export default function ParcelAnalysisPanel({ parcelId }: ParcelAnalysisPanelPro
 
   const handleDelete = async () => {
     if (!latest) return;
-    const others = analyses.length > 1 ? "\n\nL'analyse précédente redeviendra celle affichée." : "";
-    if (!window.confirm(`Supprimer l'analyse du ${fmtDate(latest.analyzed_at)} ?${others}`)) return;
+    if (!(await confirm({
+      title: `Supprimer l'analyse du ${fmtDate(latest.analyzed_at)} ?`,
+      message: analyses.length > 1 ? "L'analyse précédente redeviendra celle affichée." : undefined,
+    }))) return;
     try {
       await parcelAnalysisService.remove(latest.id);
       showToast("success", "Analyse supprimée.");

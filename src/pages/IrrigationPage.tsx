@@ -4,6 +4,7 @@ import FarmFormModal from "../components/Dashboard/FarmFormModal";
 import ParcelSelectors from "../components/Dashboard/ParcelSelectors";
 import EquipmentTab from "../components/Irrigation/EquipmentTab";
 import IrrigationHistory from "../components/Irrigation/IrrigationHistory";
+import WaterBalanceTab from "../components/Irrigation/WaterBalanceTab";
 import WateringsTab from "../components/Irrigation/WateringsTab";
 import { SelectionProvider } from "../context/SelectionContext";
 import { useSelection } from "../hooks/useSelection";
@@ -15,7 +16,7 @@ const TABS: { key: Tab; label: string; icon: string; next?: string }[] = [
   { key: "equipment", label: "Équipements", icon: "🔧" },
   { key: "waterings", label: "Arrosages", icon: "🚿" },
   { key: "history", label: "Historique", icon: "🕘" },
-  { key: "follow", label: "Suivi", icon: "📊", next: "Comparer l'eau apportée et la pluie au besoin des cultures." },
+  { key: "follow", label: "Suivi", icon: "📊" },
 ];
 
 const card: React.CSSProperties = {
@@ -90,6 +91,8 @@ function IrrigationContent({ showFarmForm, onCloseFarmForm }: { showFarmForm: bo
             <p style={muted}>
               <strong style={{ color: "#374151" }}>Prochaine étape.</strong> {current.next}
             </p>
+          ) : tab === "follow" ? (
+            <WaterBalanceTab parcelId={selectedParcel.id} parcelName={selectedParcel.nom} />
           ) : tab === "waterings" ? (
             <WateringsTab parcelId={selectedParcel.id} parcelName={selectedParcel.nom} parcelAreaM2={selectedParcel.surface_m2 || null} />
           ) : (

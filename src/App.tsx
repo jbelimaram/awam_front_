@@ -2,6 +2,7 @@ import { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/AuthContext';
 import { ToastProvider } from './hooks/ToastContext';
+import { ConfirmProvider } from './hooks/ConfirmContext';
 import ToastContainer from './components/Common/ToastContainer';
 import PageLoader from './components/Common/PageLoader';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
@@ -32,6 +33,7 @@ export default function App() {
 
   return (
     <ToastProvider>
+     <ConfirmProvider></ConfirmProvider>
       <AuthProvider>
         <BrowserRouter>
           <ToastContainer />
@@ -66,6 +68,7 @@ export default function App() {
           </Suspense>
         </BrowserRouter>
       </AuthProvider>
+     </ConfirmProvider>
     </ToastProvider>
   );
 }

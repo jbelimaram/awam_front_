@@ -8,6 +8,7 @@ import { formatAreaHa, getCentroid } from "../../utils/geo";
 import ParcelFormModal from "./ParcelFormModal";
 import type { ParcelUpdatePayload } from "../../types/parcel";
 import ParcelAnalysisPanel from "./ParcelAnalysisPanel";
+import { useConfirm } from "../../hooks/useConfirm";
 
 /** Libellé affiché pour l'état du traitement satellite. */
 const RASTER_STATUS_LABELS: Record<string, string> = {
@@ -70,7 +71,10 @@ export default function ParcelInfoCard() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(`Supprimer définitivement la parcelle « ${selectedParcel.nom} » ?`)) return;
+ if (!(await confirm({
+      title: `Supprimer la parcelle « ${selectedParcel.nom} » ?`,
+      message: "Ses cultures, ses indices, son historique et ses interventions seront aussi supprimés.",
+    }))) return;
     setBusy(true);
     try {
       await parcelService.remove(selectedParcel.id);

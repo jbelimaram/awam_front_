@@ -87,3 +87,53 @@ export interface WateringHistoryItem extends Watering {
   /** Surface de la parcelle (m²) */
   parcel_area_m2: number | null;
 }
+
+// ======================================================================
+// Suivi : besoin en eau et besoin couvert
+// ======================================================================
+
+export type CoverageStatus = "manque" | "juste" | "bien" | "trop";
+
+/** Bilan d'eau d'une culture sur une période */
+export interface WaterBalance {
+  start: string;
+  end: string;
+  days: number;
+  et0_mm: number;
+  kc: number | null;
+  rain_mm: number;
+  rain_useful_mm: number;
+  irrigation_l: number;
+  need_mm: number | null;
+  need_l: number | null;
+  irrigation_mm: number | null;
+  received_mm: number | null;
+  received_l: number | null;
+  coverage_pct: number | null;
+  missing_l: number | null;
+  status: CoverageStatus | null;
+  /** Pourquoi le bilan n'est pas calculable, le cas échéant */
+  problems: string[];
+  /** Semaine en cours (tableau des semaines) */
+  current?: boolean;
+}
+
+export interface CropWaterBalance {
+  crop_id: number;
+  label: string;
+  species_label: string;
+  area_m2: number | null;
+  plants: number | null;
+  last7: WaterBalance;
+  interpretation: string[];
+  weeks: WaterBalance[];
+}
+
+export interface ParcelWaterBalance {
+  parcel_id: number;
+  parcel_name: string;
+  crops: CropWaterBalance[];
+  /** Litres arrosés « toute la parcelle » sur une parcelle à plusieurs cultures */
+  unassigned_l_last7: number | null;
+  thresholds: { low: number; ok: number; high: number };
+}

@@ -9,6 +9,7 @@ import type { Equipment, Watering } from "../../types/irrigation";
 import { isoDay, shortDay } from "../Planning/planningUtils";
 import WateringFormModal, { type WateringMode } from "./WateringFormModal";
 import { KIND_META, fmt } from "./equipmentDisplay";
+import { useConfirm } from "../../hooks/useConfirm";
 
 /** Nombre de jours d'arrosages faits affichés */
 const DONE_DAYS = 60;

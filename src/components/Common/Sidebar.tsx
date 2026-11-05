@@ -7,6 +7,7 @@ import { useToast } from "../../hooks/useToast";
 import { farmService } from "../../Services/farmService";
 import FarmFormModal from "../Dashboard/FarmFormModal";
 import type { Farm } from "../../types/farm";
+import { useConfirm } from "../../hooks/useConfirm";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -48,7 +49,7 @@ export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps
         ? `Ses ${parcelCount} parcelle${parcelCount > 1 ? "s" : ""} seront supprimée${parcelCount > 1 ? "s" : ""}, ` +
           "avec leurs cultures, leurs indices, leur historique et leurs interventions."
         : "Elle ne contient aucune parcelle.";
-    if (!window.confirm(`Supprimer la ferme « ${farm.name} » ?\n\n${detail}\n\nCette action est définitive.`)) {
+    if (!(await confirm({ title: `Supprimer la ferme « ${farm.name} » ?`, message: detail }))) {
       return;
     }
 

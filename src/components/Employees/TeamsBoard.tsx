@@ -5,6 +5,7 @@ import type { FarmEmployee } from "../../types/farmEmployee";
 import type { TaskType } from "../../types/taskType";
 import { teamLabel } from "../../utils/teams";
 import TeamMembersModal from "./TeamMembersModal";
+import { useConfirm } from "../../hooks/useConfirm";
 
 interface TeamsBoardProps {
   farmId: number;
@@ -77,15 +78,22 @@ export default function TeamsBoard({ farmId, farmName, links, taskTypes, onChang
     }
   };
 
-  const removeMember = (l: FarmEmployee) =>
+  const removeMember = async (l: FarmEmployee) => {
+    if (!(await confirm({
+      title: `Retirer ${l.employee.full_name} de son équipe ?`,
+      message: "Il reste dans la ferme, sans équipe. Vous pourrez l'ajouter de nouveau à une équipe.",
+      confirmLabel: "Retirer",
+      tone: "neutral",
+    }))) return;
     run(() => farmEmployeeService.assignTeam(farmId, null, [l.id]), `${l.employee.full_name} est maintenant sans équipe.`);
+  };
 
-    const dissolveTeam = (code: string, members: FarmEmployee[]) => {
+    const dissolveTeam = async (code: string, members: FarmEmployee[]) => {
     const label = `Équipe ${teamLabel(code, taskTypes).toLowerCase()}`;
     const detail = members.length
       ? `Ses ${members.length} membre${members.length > 1 ? "s passeront" : " passera"} sans équipe.`
       : "Elle n'a aucun membre.";
-    if (!window.confirm(`Dissoudre ${label} à ${farmName} ?\n\n${detail}`)) return;
+    if (!(await confirm({ title: `Dissoudre l'${label.toLowerCase()} ?`, message: [`Ferme ${farmName}.`, detail], confirmLabel: "Dissoudre" }))) return;
 
     run(async () => {
             // Un nom personnalisé que plus rien ne porte disparaît seul de la liste

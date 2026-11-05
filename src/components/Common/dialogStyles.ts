@@ -9,6 +9,11 @@ export const dialogButton = {
     padding: "6px 16px", fontSize: 12.5, fontWeight: 600, borderRadius: 8, border: "none",
     background: "#1b4332", color: "#fff", cursor: "pointer", whiteSpace: "nowrap",
   } as React.CSSProperties,
+  /** Action définitive : supprimer, dissoudre… */
+  danger: {
+    padding: "6px 16px", fontSize: 12.5, fontWeight: 600, borderRadius: 8, border: "none",
+    background: "#A32D2D", color: "#fff", cursor: "pointer", whiteSpace: "nowrap",
+  } as React.CSSProperties,
 };
 
 /** Libellé au-dessus d'un champ */

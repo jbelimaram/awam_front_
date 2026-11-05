@@ -14,6 +14,7 @@ import { useSelection } from "../hooks/useSelection";
 import { useToast } from "../hooks/useToast";
 import type { Crop, CropObservation } from "../types/crop";
 import type { CropNeeds, Diagnosis, StageTimelineItem } from "../types/diagnosis";
+import { useConfirm } from "../hooks/useConfirm";
 
 type TabKey = "info" | "stages" | "needs";
 
@@ -112,7 +113,11 @@ function CropsContent({
     }
   };
 
-  const handleDeleteObservation = async (id: number) => {
+  const handleDeleteObservation = async (id: number) => const obs = observations.find((o) => o.id === id);
+    if (!(await confirm({
+      title: "Supprimer cette observation ?",
+      message: obs ? `« ${obs.content} »` : undefined,
+    }))) return;
     try {
       await cropService.removeObservation(id);
       setObservations((prev) => prev.filter((o) => o.id !== id));

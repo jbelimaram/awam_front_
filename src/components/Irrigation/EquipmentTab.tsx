@@ -6,6 +6,7 @@ import type { Crop } from "../../types/crop";
 import type { Equipment } from "../../types/irrigation";
 import EquipmentFormModal from "./EquipmentFormModal";
 import { KIND_META, SOURCE_LABELS, keyFacts } from "./equipmentDisplay";
+import { useConfirm } from "../../hooks/useConfirm";
 
 const chip = (background: string, color: string): React.CSSProperties => ({
   fontSize: 11.5, borderRadius: 999, padding: "2px 9px", background, color, whiteSpace: "nowrap",
