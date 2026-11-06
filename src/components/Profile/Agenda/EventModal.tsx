@@ -6,6 +6,7 @@ import DialogField from '../ui/DialogField';
 import { agendaEventSchema, agendaStatusValues, agendaReminderValues, reminderUnitValues, type AgendaEventFormValues } from '../../../utils/schemas';
 import { statusConfig } from './statusConfig';
 import type { AgendaEvent, CreateAgendaEventPayload } from '../../../types/agenda';
+import BusyLabel from "../../Common/BusyLabel";
 
 interface EventModalProps {
   event: AgendaEvent | null;
@@ -179,7 +180,7 @@ export default function EventModal({ event, defaultStart, onSave, onDelete, onCl
             Annuler
           </button>
           <button type="submit" form="agenda-event-form" disabled={isSubmitting} style={dialogButton.primary}>
-            {isSubmitting ? 'Enregistrement…' : event ? 'Enregistrer' : 'Créer'}
+            <BusyLabel busy={isSubmitting} text="Enregistrement…">{event ? 'Enregistrer' : 'Créer'}</BusyLabel>
           </button>
         </>
       }

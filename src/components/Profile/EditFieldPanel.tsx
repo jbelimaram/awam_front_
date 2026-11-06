@@ -4,6 +4,7 @@ import { z } from 'zod';
 import Dialog from '../Common/Dialog';
 import { dialogButton } from '../Common/dialogStyles';
 import DialogField from './ui/DialogField';
+import BusyLabel from "../Common/BusyLabel";
 
 interface EditFieldPanelProps<T extends { [key: string]: string }> {
   label: string;
@@ -82,7 +83,7 @@ export default function EditFieldPanel<T extends { [key: string]: string }>({
             title={unchanged ? 'Aucun changement à enregistrer' : undefined}
             style={{ ...dialogButton.primary, opacity: unchanged ? 0.45 : 1, cursor: unchanged ? 'not-allowed' : 'pointer' }}
           >
-            {isSubmitting ? 'Enregistrement…' : 'Enregistrer'}
+            <BusyLabel busy={isSubmitting} text="Enregistrement…">{'Enregistrer'}</BusyLabel>
           </button>
         </>
       }

@@ -4,6 +4,7 @@ import Dialog from '../Common/Dialog';
 import { dialogButton } from '../Common/dialogStyles';
 import DialogField from './ui/DialogField';
 import { buildPasswordUpdateSchema, type PasswordUpdateFormValues } from '../../utils/schemas';
+import BusyLabel from "../Common/BusyLabel";
 
 interface EditPasswordPanelProps {
   hasPassword: boolean;
@@ -64,7 +65,7 @@ export default function EditPasswordPanel({ hasPassword, onConfirm, onCancel }: 
             Annuler
           </button>
           <button type="submit" form="edit-password-form" disabled={isSubmitting} style={dialogButton.primary}>
-            {isSubmitting ? 'Enregistrement…' : 'Enregistrer'}
+            <BusyLabel busy={isSubmitting} text="Enregistrement…">{'Enregistrer'}</BusyLabel>
           </button>
         </>
       }

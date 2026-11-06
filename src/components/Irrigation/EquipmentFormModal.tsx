@@ -5,6 +5,7 @@ import { irrigationService } from "../../Services/irrigationService";
 import type { Crop } from "../../types/crop";
 import type { Equipment, EquipmentKind, EquipmentPayload, WaterSource } from "../../types/irrigation";
 import { KIND_META, SOURCE_LABELS, fmt } from "./equipmentDisplay";
+import BusyLabel from "../Common/BusyLabel";
 
 interface Props {
   isOpen: boolean;
@@ -33,7 +34,6 @@ interface Form {
   emittersPerPlant: string;
   plantSpacing: string;
   rowSpacing: string;
-  efficiency: string;
   active: boolean;
   notes: string;
 }
@@ -60,7 +60,6 @@ function fromEquipment(e: Equipment | null): Form {
     emittersPerPlant: str(e?.emitters_per_plant),
     plantSpacing: str(e?.plant_spacing_m),
     rowSpacing: str(e?.row_spacing_m),
-    efficiency: str(e?.efficiency_pct),
     active: e?.active ?? true,
     notes: e?.notes ?? "",
   };
@@ -150,8 +149,6 @@ export default function EquipmentFormModal({ isOpen, onClose, parcelId, parcelNa
     if (form.kind === "goutte_a_goutte" && (!num(form.emitterFlow) || !num(form.emittersPerPlant))) {
       return setError("Indiquez le débit d'un goutteur et le nombre de goutteurs par plant.");
     }
-    const eff = num(form.efficiency);
-    if (eff !== null && (eff <= 0 || eff > 100)) return setError("L'efficience est un pourcentage, entre 1 et 100.");
 
     const payload: EquipmentPayload & { name: string; kind: EquipmentKind } = {
       name: form.name.trim(),
@@ -167,7 +164,6 @@ export default function EquipmentFormModal({ isOpen, onClose, parcelId, parcelNa
       emitters_per_plant: num(form.emittersPerPlant),
       plant_spacing_m: num(form.plantSpacing),
       row_spacing_m: num(form.rowSpacing),
-      efficiency_pct: eff,
       active: form.active,
       notes: form.notes.trim() || null,
     };
@@ -200,7 +196,7 @@ export default function EquipmentFormModal({ isOpen, onClose, parcelId, parcelNa
             Annuler
           </button>
           <button type="button" onClick={save} disabled={saving} style={dialogButton.primary}>
-            {saving ? "Enregistrement…" : "Enregistrer"}
+            <BusyLabel busy={saving} text="Enregistrement…">{"Enregistrer"}</BusyLabel>
           </button>
         </>
       }
@@ -291,11 +287,6 @@ export default function EquipmentFormModal({ isOpen, onClose, parcelId, parcelNa
               <NumberField label="Longueur" value={form.hoseLength} onChange={(v) => set("hoseLength", v)} unit="m" placeholder="50" />
             </div>
           )}
-          {form.kind === "tuyau" && (
-            <p style={{ fontSize: 11.5, color: "#4b5563", margin: "6px 0 0" }}>
-              Pour mesurer le débit : chronométrez le remplissage d'un arrosoir. 9 L en 30 secondes, c'est 18 L/min.
-            </p>
-          )}
           {form.kind === "goutte_a_goutte" && (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <NumberField label="Débit d'un goutteur *" value={form.emitterFlow} onChange={(v) => set("emitterFlow", v)} unit="L/h" placeholder="4" />
@@ -315,20 +306,14 @@ export default function EquipmentFormModal({ isOpen, onClose, parcelId, parcelNa
           )}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          <label style={dialogLabel}>
-            Source d'eau
-            <select value={form.waterSource} onChange={(e) => set("waterSource", e.target.value as WaterSource)} style={dialogInput}>
-              {(Object.keys(SOURCE_LABELS) as WaterSource[]).map((s) => (
-                <option key={s} value={s}>{SOURCE_LABELS[s]}</option>
-              ))}
-            </select>
-          </label>
-          <NumberField
-            label="Efficience (facultative)" value={form.efficiency} onChange={(v) => set("efficiency", v)} unit="%"
-            hint="Part de l'eau qui atteint vraiment les racines"
-          />
-        </div>
+        <label style={dialogLabel}>
+          Source d'eau
+          <select value={form.waterSource} onChange={(e) => set("waterSource", e.target.value as WaterSource)} style={dialogInput}>
+            {(Object.keys(SOURCE_LABELS) as WaterSource[]).map((s) => (
+              <option key={s} value={s}>{SOURCE_LABELS[s]}</option>
+            ))}
+          </select>
+        </label>
 
         <label style={dialogLabel}>
           Notes

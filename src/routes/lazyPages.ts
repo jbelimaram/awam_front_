@@ -45,7 +45,8 @@ const loaders = {
   employees: withUpdateGuard(() => import("../pages/EmployeesPage")),
   profile: withUpdateGuard(() => import("../pages/ProfilePage")),
   climate: withUpdateGuard(() => import("../pages/ClimatePage")),
-    irrigation: withUpdateGuard(() => import("../pages/IrrigationPage")),
+  irrigation: withUpdateGuard(() => import("../pages/IrrigationPage")),
+  conditions: withUpdateGuard(() => import("../pages/ConditionsPage")),
 };
 
 export const LoginPage = lazy(loaders.login);
@@ -57,6 +58,7 @@ export const EmployeesPage = lazy(loaders.employees);
 export const ProfilePage = lazy(loaders.profile);
 export const ClimatePage = lazy(loaders.climate);
 export const IrrigationPage = lazy(loaders.irrigation);
+export const ConditionsPage = lazy(loaders.conditions);
 
 /** Préchargement d'une page par son adresse, ex. au survol d'un lien */
 const BY_PATH: Record<string, () => Promise<PageModule>> = {
@@ -66,6 +68,7 @@ const BY_PATH: Record<string, () => Promise<PageModule>> = {
   "/profile": loaders.profile,
   "/climat": loaders.climate,
   "/irrigation": loaders.irrigation,
+  "/climat-cultures": loaders.conditions,
 };
 
 /** Pages principales, préchargées discrètement après l'ouverture */

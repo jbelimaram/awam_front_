@@ -6,6 +6,7 @@ import { useToast } from "../../hooks/useToast";
 import type { Activity } from "../../types/activity";
 import type { FarmEmployee } from "../../types/farmEmployee";
 import { dayToDateTime, isoDay, nowTime } from "./planningUtils";
+import BusyLabel from "../Common/BusyLabel";
 
 interface CompleteTaskModalProps {
   isOpen: boolean;
@@ -96,7 +97,7 @@ export default function CompleteTaskModal({ isOpen, onClose, task, taskLabel, li
             Annuler
           </button>
           <button type="button" onClick={handleSave} disabled={saving} style={dialogButton.primary}>
-            {saving ? "Enregistrement…" : "✓ Marquer réalisée"}
+            <BusyLabel busy={saving} text="Enregistrement…">{"✓ Marquer réalisée"}</BusyLabel>
           </button>
         </>
       }

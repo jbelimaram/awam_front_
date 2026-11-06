@@ -8,6 +8,9 @@ import { api } from "../../Services/api";
 import { useToast } from "../../hooks/useToast";
 import { shownStatus } from "../../utils/cropStatus";
 import { useConfirm } from "../../hooks/useConfirm";
+import BusyLabel from "../Common/BusyLabel";
+
+
 import type {
   Crop,
   CropStatus,
@@ -760,7 +763,7 @@ export default function CropFormModal({
             Annuler
           </button>
           <button type="button" onClick={handleSubmit} disabled={submitting || loading} style={dialogButton.primary}>
-            {submitting ? "Enregistrement…" : "Enregistrer"}
+            <BusyLabel busy={submitting} text="Enregistrement…">{"Enregistrer"}</BusyLabel>
           </button>
         </>
       }

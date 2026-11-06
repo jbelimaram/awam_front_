@@ -10,6 +10,7 @@ import { useToast } from "../hooks/useToast";
 import { climateService } from "../Services/climateService";
 import type { ClimateSite, ClimateSummary } from "../types/climate";
 import { useConfirm } from "../hooks/useConfirm";
+import ActionButton from "../components/Common/ActionButton";
 
 /** Nom des scénarios d'émissions, pour l'utilisateur */
 const SCENARIO_LABELS: Record<string, string> = {
@@ -156,14 +157,14 @@ showToast("success", `${site.name} supprimé.`);
                     </span>
                   </button>
                   {!s.farm_id && (
-                    <button
+                    <ActionButton
                       type="button"
                       onClick={() => removeSite(s)}
-                      title="Retirer ce lieu"
+                      title="Supprimer ce lieu"
                       style={{ border: "none", background: "transparent", cursor: "pointer", fontSize: 12, color: active ? "#fecaca" : "#b42318" }}
                     >
                       🗑
-                    </button>
+                    </ActionButton>
                   )}
                 </div>
               );
@@ -197,13 +198,14 @@ showToast("success", `${site.name} supprimé.`);
                 <p style={{ fontSize: 12.5, color: "#A32D2D", margin: "6px 0 10px", wordBreak: "break-word" }}>
                   {selected.last_error ?? "erreur inconnue"}
                 </p>
-                <button
+                <ActionButton
                   type="button"
                   onClick={() => retrySite(selected)}
+                  busyText="Relance en cours…"
                   style={{ padding: "7px 14px", borderRadius: 8, border: "none", background: "#1b4332", color: "#fff", fontWeight: 600, cursor: "pointer" }}
                 >
                   Relancer
-                </button>
+                </ActionButton>
               </>
             ) : (
               <p style={{ ...muted, marginTop: 8, lineHeight: 1.6 }}>

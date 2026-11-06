@@ -5,6 +5,7 @@ import { employeeService } from "../../Services/employeeService";
 import { farmEmployeeService } from "../../Services/farmEmployeeService";
 import { useToast } from "../../hooks/useToast";
 import type { FarmEmployee, FarmEmployeeRole } from "../../types/farmEmployee";
+import BusyLabel from "../Common/BusyLabel";
 
 interface EmployeeFormModalProps {
   isOpen: boolean;
@@ -94,7 +95,7 @@ export default function EmployeeFormModal({ isOpen, onClose, farmId, farmName, l
             Annuler
           </button>
           <button type="button" onClick={handleSubmit} disabled={submitting} style={dialogButton.primary}>
-            {submitting ? "Enregistrement…" : "Enregistrer"}
+            <BusyLabel busy={submitting} text="Enregistrement…">{"Enregistrer"}</BusyLabel>
           </button>
         </>
       }

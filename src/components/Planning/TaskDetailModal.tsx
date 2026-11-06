@@ -3,6 +3,7 @@ import { dialogButton, dialogCard, dialogSection } from "../Common/dialogStyles"
 import { STATUS_LABELS, type Activity } from "../../types/activity";
 import { doneTime, plannedTime, shortDay, taskDay } from "./planningUtils";
 import { taskStyle } from "./taskStyles";
+import ActionButton from "../Common/ActionButton";
 
 interface TaskDetailModalProps {
   task: Activity | null;
@@ -58,13 +59,14 @@ export default function TaskDetailModal({
       width={440}
       footer={
         <>
-          <button
+          <ActionButton
             type="button"
             onClick={() => onDelete(task)}
+            busyText="Suppression…"
             style={{ ...dialogButton.secondary, color: "#b91c1c", borderColor: "#fecaca", marginRight: "auto" }}
           >
             Supprimer
-          </button>
+          </ActionButton>
           {task.status === "a_realiser" && (
             <>
               <button type="button" onClick={() => onEdit(task)} style={dialogButton.secondary}>

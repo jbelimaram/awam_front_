@@ -6,6 +6,7 @@ import { SECTION_TINT, dialogButton, dialogCard, dialogInput, dialogLabel, dialo
 import { BASE_MAPS } from "../Dashboard/ParcelMapCard";
 import { climateService } from "../../Services/climateService";
 import type { ClimateSite } from "../../types/climate";
+import BusyLabel from "../Common/BusyLabel";
 
 interface Props {
   isOpen: boolean;
@@ -124,7 +125,7 @@ export default function ClimateSiteFormModal({ isOpen, onClose, onCreated }: Pro
             Annuler
           </button>
           <button type="button" onClick={save} disabled={saving} style={dialogButton.primary}>
-            {saving ? "Enregistrement…" : "Étudier ce lieu"}
+            <BusyLabel busy={saving} text="Enregistrement…">{"Étudier ce lieu"}</BusyLabel>
           </button>
         </>
       }

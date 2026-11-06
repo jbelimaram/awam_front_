@@ -1,4 +1,5 @@
 import type { FarmEmployee } from "../../types/farmEmployee";
+import ActionButton from "../Common/ActionButton";
 
 interface EmployeeInfoTabProps {
   link: FarmEmployee;
@@ -38,16 +39,17 @@ export default function EmployeeInfoTab({ link, farmName, onEdit, onDelete, onTo
           {!isActive && <span style={{ color: "#b45309" }}> · Inactif</span>}
         </div>
         <div style={{ display: "flex", gap: 6 }}>
-          <button
+          <ActionButton
             type="button"
             onClick={onToggleActive}
+            busyText="En cours…"
             style={{
               border: `1px solid ${isActive ? "#fcd34d" : "#86efac"}`, background: "#fff",
               color: isActive ? "#b45309" : "#15803d", borderRadius: 6, padding: "5px 12px", fontSize: 13, cursor: "pointer",
             }}
           >
             {isActive ? "Rendre inactif" : "Réactiver"}
-          </button>
+          </ActionButton>
           <button
             type="button"
             onClick={onEdit}
@@ -55,14 +57,15 @@ export default function EmployeeInfoTab({ link, farmName, onEdit, onDelete, onTo
           >
             ✎ Modifier
           </button>
-          <button
+          <ActionButton
             type="button"
             onClick={onDelete}
+            busyText="Suppression…"
             title="Supprimer l'employé"
             style={{ border: "1px solid #fecaca", background: "#fff", color: "#b91c1c", borderRadius: 6, padding: "5px 10px", fontSize: 13, cursor: "pointer" }}
           >
             🗑
-          </button>
+          </ActionButton>
         </div>
       </div>
 

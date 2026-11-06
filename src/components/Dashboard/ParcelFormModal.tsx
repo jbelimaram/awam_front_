@@ -6,6 +6,8 @@ import type { DashboardParcel } from "../../types/dashboard";
 import type { GeoJsonGeometry, ParcelUpdatePayload } from "../../types/parcel";
 import { parcelService } from "../../Services/parcelService";
 import { parcelAnalysisService } from "../../Services/parcelAnalalysisService";
+import BusyLabel from "../Common/BusyLabel";
+
 import AnalysisFields, {
   EMPTY_ANALYSIS_FORM,
   isAnalysisEmpty,
@@ -139,7 +141,7 @@ export default function ParcelFormModal({
             Annuler
           </button>
           <button type="button" onClick={handleSubmit} disabled={submitting} style={dialogButton.primary}>
-            {submitting ? "Enregistrement…" : "Enregistrer"}
+            <BusyLabel busy={submitting} text="Enregistrement…">{"Enregistrer"}</BusyLabel>
           </button>
         </>
       }

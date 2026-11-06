@@ -5,6 +5,7 @@ import { geocodeLocation } from "../../utils/geocode";
 import type { Farm } from "../../types/farm";
 import Dialog from "../Common/Dialog";
 import { dialogButton, dialogInput, dialogLabel } from "../Common/dialogStyles";
+import BusyLabel from "../Common/BusyLabel";
 
 interface FarmFormModalProps {
   isOpen: boolean;
@@ -87,7 +88,7 @@ export default function FarmFormModal({ isOpen, onClose, farm = null, onSaved }:
             Annuler
           </button>
           <button type="submit" form="farm-form" disabled={submitting} style={dialogButton.primary}>
-            {submitting ? "Enregistrement…" : isEdit ? "Enregistrer" : "Créer"}
+            <BusyLabel busy={submitting} text="Enregistrement…">{isEdit ? "Enregistrer" : "Créer"}</BusyLabel>
           </button>
         </>
       }

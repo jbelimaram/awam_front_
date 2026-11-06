@@ -7,6 +7,7 @@ import type { Equipment } from "../../types/irrigation";
 import EquipmentFormModal from "./EquipmentFormModal";
 import { KIND_META, SOURCE_LABELS, keyFacts } from "./equipmentDisplay";
 import { useConfirm } from "../../hooks/useConfirm";
+import ActionButton from "../Common/ActionButton";
 
 const chip = (background: string, color: string): React.CSSProperties => ({
   fontSize: 11.5, borderRadius: 999, padding: "2px 9px", background, color, whiteSpace: "nowrap",
@@ -19,6 +20,7 @@ const chip = (background: string, color: string): React.CSSProperties => ({
  */
 export default function EquipmentTab({ parcelId, parcelName }: { parcelId: number; parcelName: string }) {
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const [items, setItems] = useState<Equipment[] | null>(null);
   const [crops, setCrops] = useState<Crop[]>([]);
   const [editing, setEditing] = useState<Equipment | null>(null);
@@ -44,7 +46,10 @@ export default function EquipmentTab({ parcelId, parcelName }: { parcelId: numbe
   }, [load]);
 
   const remove = async (e: Equipment) => {
-    if (!window.confirm(`Supprimer « ${e.name} » ?`)) return;
+    if (!(await confirm({
+      title: `Supprimer « ${e.name} » ?`,
+      message: "Ses arrosages déjà faits restent dans l'historique, avec leur volume d'eau.",
+    }))) return;
     try {
       await irrigationService.removeEquipment(e.id);
       showToast("success", `${e.name} supprimé.`);
@@ -110,12 +115,12 @@ export default function EquipmentTab({ parcelId, parcelName }: { parcelId: numbe
                   >
                     ✎
                   </button>
-                  <button
+                  <ActionButton
                     type="button" title="Supprimer" onClick={() => remove(e)}
                     style={{ border: "none", background: "transparent", cursor: "pointer", color: "#b42318", fontSize: 13 }}
                   >
                     🗑
-                  </button>
+                  </ActionButton>
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 9 }}>
                   {e.crops.map((c) => (

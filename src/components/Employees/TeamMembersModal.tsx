@@ -6,6 +6,7 @@ import { useToast } from "../../hooks/useToast";
 import type { FarmEmployee } from "../../types/farmEmployee";
 import type { TaskType } from "../../types/taskType";
 import { teamLabel } from "../../utils/teams";
+import BusyLabel from "../Common/BusyLabel";
 
 interface TeamMembersModalProps {
   isOpen: boolean;
@@ -147,7 +148,7 @@ export default function TeamMembersModal({
             Annuler
           </button>
           <button type="button" onClick={handleSave} disabled={saving} style={dialogButton.primary}>
-            {saving ? "Enregistrement…" : isNew ? "Créer l'équipe" : "Enregistrer"}
+            <BusyLabel busy={saving} text="Enregistrement…">{isNew ? "Créer l'équipe" : "Enregistrer"}</BusyLabel>
           </button>
         </>
       }

@@ -10,6 +10,7 @@ import { isoDay, shortDay } from "../Planning/planningUtils";
 import WateringFormModal, { type WateringMode } from "./WateringFormModal";
 import { KIND_META, fmt } from "./equipmentDisplay";
 import { useConfirm } from "../../hooks/useConfirm";
+import ActionButton from "../Common/ActionButton";
 
 /** Nombre de jours d'arrosages faits affichés */
 const DONE_DAYS = 60;
@@ -161,9 +162,9 @@ export default function WateringsTab({
         <button type="button" title="Modifier" onClick={() => setModal({ mode: "edit", watering: w })} style={{ ...iconButton, color: "#374151" }}>
           ✎
         </button>
-        <button type="button" title="Supprimer" onClick={() => remove(w)} style={{ ...iconButton, color: "#b42318" }}>
+        <ActionButton type="button" title="Supprimer" onClick={() => remove(w)} style={{ ...iconButton, color: "#b42318" }}>
           🗑
-        </button>
+        </ActionButton>
       </div>
     );
   };

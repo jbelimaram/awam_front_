@@ -4,6 +4,9 @@ import { parcelAnalysisService } from "../../Services/parcelAnalalysisService";
 import { useToast } from "../../hooks/useToast";
 import Dialog from "../Common/Dialog";
 import { dialogButton } from "../Common/dialogStyles";
+import ActionButton from "../Common/ActionButton";
+import BusyLabel from "../Common/BusyLabel";
+
 import AnalysisFields, {
   EMPTY_ANALYSIS_FORM,
   isAnalysisEmpty,
@@ -163,9 +166,9 @@ export default function ParcelAnalysisPanel({ parcelId }: ParcelAnalysisPanelPro
             <button type="button" onClick={openEdit} title="Modifier cette analyse" aria-label="Modifier cette analyse" style={{ ...iconButton, fontSize: 12, color: "#374151" }}>
               ✎
             </button>
-            <button type="button" onClick={handleDelete} title="Supprimer cette analyse" aria-label="Supprimer cette analyse" style={{ ...iconButton, fontSize: 12, color: "#b42318" }}>
+            <ActionButton type="button" onClick={handleDelete} title="Supprimer cette analyse" aria-label="Supprimer cette analyse" style={{ ...iconButton, fontSize: 12, color: "#b42318" }}>
               🗑
-            </button>
+            </ActionButton>
           </>
         )}
       </div>
@@ -205,7 +208,7 @@ export default function ParcelAnalysisPanel({ parcelId }: ParcelAnalysisPanelPro
               Annuler
             </button>
             <button type="button" onClick={handleSave} disabled={saving} style={dialogButton.primary}>
-              {saving ? "Enregistrement…" : "Enregistrer"}
+              <BusyLabel busy={saving} text="Enregistrement…">{"Enregistrer"}</BusyLabel>
             </button>
           </>
         }

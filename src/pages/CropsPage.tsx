@@ -40,7 +40,7 @@ function CropsContent({
 }) {
   const { selectedParcelId, refreshFarms } = useSelection();
   const { showToast } = useToast();
-
+  const confirm = useConfirm();
   const [crops, setCrops] = useState<Crop[]>([]);
   const [selectedCropId, setSelectedCropId] = useState<number | null>(null);
   const [diagnosis, setDiagnosis] = useState<Diagnosis | null>(null);

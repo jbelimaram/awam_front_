@@ -8,6 +8,7 @@ import { farmService } from "../../Services/farmService";
 import FarmFormModal from "../Dashboard/FarmFormModal";
 import type { Farm } from "../../types/farm";
 import { useConfirm } from "../../hooks/useConfirm";
+import ActionButton from "./ActionButton";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -23,7 +24,7 @@ interface SidebarProps {
  * supprimer (après confirmation : la suppression efface aussi ses parcelles).
  */
 /** Pages qui affichent le contenu d'une ferme : on y change de ferme sur place */
-const FARM_PAGES = ["/", "/cultures", "/employes"];
+const FARM_PAGES = ["/", "/cultures", "/employes", "/irrigation", "/climat-cultures"];
 
 export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps) {
   const navigate = useNavigate();
@@ -263,7 +264,7 @@ export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps
                     >
                       ✎
                     </button>
-                    <button
+                    <ActionButton
                       type="button"
                       title={`Supprimer la ferme « ${farm.name} »`}
                       aria-label={`Supprimer la ferme ${farm.name}`}
@@ -271,8 +272,8 @@ export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps
                       disabled={deleting}
                       style={{ ...actionStyle, color: isActive ? "#fecaca" : "#b42318" }}
                     >
-                      {deleting ? "…" : "🗑"}
-                    </button>
+                      🗑
+                    </ActionButton>
                   </span>
                 </div>
               );
@@ -329,8 +330,22 @@ export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps
           onFocus={() => preloadPath("/irrigation")}
           title="Irrigation"
         >
+          
           <span style={{ fontSize: 17 }}>💧</span>
           {!collapsed && <span>Irrigation</span>}
+        </button>
+        
+        {/* ---- Climat et cultures ---- */}
+        <button
+          type="button"
+          style={itemStyle(location.pathname === "/climat-cultures")}
+          onClick={() => navigate("/climat-cultures")}
+          onMouseEnter={() => preloadPath("/climat-cultures")}
+          onFocus={() => preloadPath("/climat-cultures")}
+          title="Climat et cultures"
+        >
+          <span style={{ fontSize: 17 }}>🌦️</span>
+          {!collapsed && <span>Climat et cultures</span>}
         </button>
 
         {/* ---- Projection climatique ---- */}

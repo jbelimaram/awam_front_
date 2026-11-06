@@ -7,6 +7,8 @@ import type { Crop } from "../../types/crop";
 import type { Employee } from "../../types/employee";
 import type { Equipment, Watering, WateringMethod, WateringQuantity } from "../../types/irrigation";
 import { KIND_META, fmt } from "./equipmentDisplay";
+import BusyLabel from "../Common/BusyLabel";
+
 
 export type WateringMode = "create" | "edit" | "complete";
 
@@ -229,7 +231,7 @@ export default function WateringFormModal({
             Annuler
           </button>
           <button type="button" onClick={save} disabled={saving} style={dialogButton.primary}>
-            {saving ? "Enregistrement…" : mode === "complete" ? "Marquer réalisé" : "Enregistrer"}
+            <BusyLabel busy={saving} text="Enregistrement…">{mode === "complete" ? "Marquer réalisé" : "Enregistrer"}</BusyLabel>
           </button>
         </>
       }

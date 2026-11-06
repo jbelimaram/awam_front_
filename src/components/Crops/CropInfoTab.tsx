@@ -1,5 +1,6 @@
 import type { Crop } from "../../types/crop";
 import { shownStatus } from "../../utils/cropStatus";
+import ActionButton from "../Common/ActionButton";
 
 const STATUS_LABEL: Record<string, string> = {
   active: "En cours",
@@ -88,9 +89,10 @@ export default function CropInfoTab({ crop, history, onEdit, onDelete }: CropInf
           >
             ✎ Modifier
           </button>
-          <button
+          <ActionButton
             type="button"
             onClick={onDelete}
+            busyText="Suppression…"
             title="Supprimer la culture"
             style={{
               padding: "4px 8px", borderRadius: 6, border: "1px solid #fecaca",
@@ -98,7 +100,7 @@ export default function CropInfoTab({ crop, history, onEdit, onDelete }: CropInf
             }}
           >
             🗑
-          </button>
+          </ActionButton>
         </div>
       </div>
 

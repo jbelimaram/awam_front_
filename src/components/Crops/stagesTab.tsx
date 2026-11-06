@@ -3,6 +3,7 @@ import StageTimeline from "./stageTimeline";
 import IndicatorRow from "./IndicatorRow";
 import type { Diagnosis, Severity, StageTimelineItem } from "../../types/diagnosis";
 import type { CropObservation } from "../../types/crop";
+import ActionButton from "../Common/ActionButton";
 
 /** Couleur du bloc d'interprétation selon la gravité. */
 const READING_COLOR: Record<Severity, string> = {
@@ -349,9 +350,9 @@ export default function StagesTab({
                 <span style={{ color: "#9ca3af" }}> · {o.stage_label}</span>
               ) : null}
             </span>
-            <button
+            <ActionButton
               type="button"
-              onClick={() => void onDeleteObservation(o.id)}
+              onClick={() => onDeleteObservation(o.id)}
               title="Supprimer"
               aria-label="Supprimer cette observation"
               style={{
@@ -363,7 +364,7 @@ export default function StagesTab({
               }}
             >
               ×
-            </button>
+            </ActionButton>
           </div>
         ))}
       </div>

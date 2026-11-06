@@ -52,3 +52,24 @@
 *::-webkit-scrollbar-button {
   display: none;
 }
+
+/* ---- Opération en cours : petit cercle qui tourne (BusyLabel, ActionButton) ---- */
+@keyframes awam-spin {
+  to { transform: rotate(360deg); }
+}
+.awam-spinner {
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  vertical-align: -0.15em;
+  animation: awam-spin 0.7s linear infinite;
+}
+/* Le bouton garde sa couleur ; la souris montre que ça travaille */
+button:has(.awam-spinner) {
+  cursor: progress !important;
+  opacity: 1 !important;
+}

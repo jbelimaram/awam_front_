@@ -6,6 +6,7 @@ import type { TaskType } from "../../types/taskType";
 import { teamLabel } from "../../utils/teams";
 import TeamMembersModal from "./TeamMembersModal";
 import { useConfirm } from "../../hooks/useConfirm";
+import ActionButton from "../Common/ActionButton";
 
 interface TeamsBoardProps {
   farmId: number;
@@ -143,22 +144,23 @@ export default function TeamsBoard({ farmId, farmName, links, taskTypes, onChang
             >
               ✎ Modifier l'équipe
             </button>
-            <button
+            <ActionButton
               type="button"
               onClick={() => dissolveTeam(code, members)}
+              busyText="Dissolution…"
               disabled={busy}
               style={{ ...iconButton, color: "#b91c1c", borderColor: "#fecaca" }}
               title="Dissoudre l'équipe"
             >
               🗑
-            </button>
+            </ActionButton>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {[...members].sort(byName).map((l) => (
               <span key={l.id} style={chip}>
                 {l.employee.full_name}
                 {l.role === "coordinateur" && <span style={{ fontSize: 11, color: "#6b7280" }}>coordinateur</span>}
-                <button
+                <ActionButton
                   type="button"
                   onClick={() => removeMember(l)}
                   disabled={busy}
@@ -166,7 +168,7 @@ export default function TeamsBoard({ farmId, farmName, links, taskTypes, onChang
                   style={{ border: "none", background: "none", color: "#6b7280", cursor: "pointer", padding: 0, fontSize: 13 }}
                 >
                   ✕
-                </button>
+                </ActionButton>
               </span>
             ))}
           </div>

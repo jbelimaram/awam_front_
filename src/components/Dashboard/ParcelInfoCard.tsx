@@ -9,6 +9,8 @@ import ParcelFormModal from "./ParcelFormModal";
 import type { ParcelUpdatePayload } from "../../types/parcel";
 import ParcelAnalysisPanel from "./ParcelAnalysisPanel";
 import { useConfirm } from "../../hooks/useConfirm";
+import ActionButton from "../Common/ActionButton";
+import BusyLabel from "../Common/BusyLabel";
 
 /** Libellé affiché pour l'état du traitement satellite. */
 const RASTER_STATUS_LABELS: Record<string, string> = {
@@ -126,9 +128,10 @@ export default function ParcelInfoCard() {
           >
             ✎ Éditer
           </button>
-          <button
+          <ActionButton
             type="button"
             onClick={handleDelete}
+            busyText="Suppression…"
             disabled={busy}
             title="Supprimer la parcelle"
             style={{
@@ -142,7 +145,7 @@ export default function ParcelInfoCard() {
             }}
           >
             🗑
-          </button>
+          </ActionButton>
         </div>
       </div>
 
@@ -225,7 +228,9 @@ export default function ParcelInfoCard() {
             opacity: analysing ? 0.6 : 1,
           }}
         >
-          {busy ? "…" : analysing ? "Analyse en cours…" : "🔄 Rafraîchir les indices"}
+          <BusyLabel busy={busy} text="Lancement de l'analyse…">
+            {analysing ? "Analyse en cours…" : "🔄 Rafraîchir les indices"}
+          </BusyLabel>
         </button>
       )}
       <ParcelAnalysisPanel parcelId={selectedParcel.id} />
