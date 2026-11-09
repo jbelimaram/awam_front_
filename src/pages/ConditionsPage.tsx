@@ -2,6 +2,7 @@ import { useState } from "react";
 import DashboardLayout from "../components/Dashboard/DashboardLayout";
 import FarmFormModal from "../components/Dashboard/FarmFormModal";
 import ParcelSelectors from "../components/Dashboard/ParcelSelectors";
+import ImpactsTab from "../components/Conditions/ImpactsTab";
 import ParametersTab from "../components/Conditions/ParametersTab";
 import { SelectionProvider } from "../context/SelectionContext";
 import { useSelection } from "../hooks/useSelection";
@@ -11,8 +12,7 @@ type Tab = "parameters" | "impacts" | "vegetation" | "alerts" | "reports";
 /** Les cinq onglets ; « next » = pas encore réalisé */
 const TABS: { key: Tab; label: string; icon: string; next?: string }[] = [
   { key: "parameters", label: "Paramètres", icon: "🌡️" },
-  { key: "impacts", label: "Impacts", icon: "🌱", next: "Les périodes de stress de chaque culture : hydrique, thermique, gel, excès d'humidité." },
-  { key: "vegetation", label: "Végétation", icon: "🛰️", next: "La réaction de la végétation (NDVI, NDMI) aux périodes de stress." },
+  { key: "impacts", label: "Impacts", icon: "🌱" },  { key: "vegetation", label: "Végétation", icon: "🛰️", next: "La réaction de la végétation (NDVI, NDMI) aux périodes de stress." },
   { key: "alerts", label: "Alertes", icon: "🔔", next: "Les alertes climatiques, prévues et observées, avec le bouton Planifier." },
   { key: "reports", label: "Rapports", icon: "📄", next: "Les rapports PDF du mois ou de la saison, pour l'aide à la décision." },
 ];
@@ -27,7 +27,7 @@ const card: React.CSSProperties = {
 const muted: React.CSSProperties = { fontSize: 13, color: "#6b7280", margin: 0 };
 
 function ConditionsContent({ showFarmForm, onCloseFarmForm }: { showFarmForm: boolean; onCloseFarmForm: () => void }) {
-  const { farms, selectedFarmId, refreshFarms } = useSelection();
+  const { farms, selectedFarmId, selectedParcel, refreshFarms } = useSelection();
   const [tab, setTab] = useState<Tab>("parameters");
   const current = TABS.find((t) => t.key === tab)!;
   const farmName = farms.find((f) => f.id === selectedFarmId)?.name ?? "";
@@ -81,6 +81,12 @@ function ConditionsContent({ showFarmForm, onCloseFarmForm }: { showFarmForm: bo
             <p style={muted}>
               <strong style={{ color: "#374151" }}>Prochaine étape.</strong> {current.next}
             </p>
+          ) : tab === "impacts" ? (
+            selectedParcel ? (
+              <ImpactsTab farmId={selectedFarmId} parcelId={selectedParcel.id} parcelName={selectedParcel.nom} />
+            ) : (
+              <p style={muted}>Sélectionnez une parcelle, dans la carte Parcelles à gauche, pour voir l'impact du climat sur ses cultures.</p>
+            )
           ) : (
             <ParametersTab farmId={selectedFarmId} farmName={farmName} />
           )}
