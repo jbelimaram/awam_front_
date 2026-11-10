@@ -66,16 +66,34 @@ export interface StageTimelineItem {
   cultural_drop: boolean;
 }
 
+/**
+ * Besoin en eau des 7 derniers jours de météo enregistrée : le même calcul
+ * que le Suivi de l'irrigation.
+ */
 export interface WaterNeed {
+  start: string;
+  end: string;
   days: number;
+  /** ET₀ réelle cumulée (Open-Meteo), mm */
   et0_mm: number;
-  kc?: number | null;
-  etc_mm: number;
+  /** Kc moyen de la période (référentiel AWAM) */
+  kc: number | null;
+  /** Le stade, donc le Kc, change pendant la période */
+  kc_varies: boolean;
+  /** Besoin de la culture, ET₀ × Kc jour par jour, mm */
+  need_mm: number | null;
+  /** Pluie mesurée, comptée en entier, mm */
   rain_mm: number;
-  effective_rain_mm: number;
-  net_need_mm: number;
-  net_need_m3?: number | null;
-  message: string;
+  irrigation_l: number;
+  irrigation_mm: number | null;
+  received_mm: number | null;
+  coverage_pct: number | null;
+  missing_mm: number | null;
+  missing_l: number | null;
+  /** « couvert » ou « non_couvert » ; null si non calculable */
+  status: "couvert" | "non_couvert" | null;
+  /** Pourquoi le besoin n'est pas calculable, le cas échéant */
+  problems: string[];
 }
 
 export interface SoilRow {

@@ -15,6 +15,21 @@ const sectionTitle: React.CSSProperties = {
   marginBottom: 8,
 };
 
+/** Les deux états du besoin couvert : mêmes libellés et explications que le Suivi de l'irrigation */
+const STATUS = {
+  couvert: {
+    label: "Besoin couvert", icon: "🟢", bg: "#EAF3DE", text: "#27500A",
+    help: "La pluie et les arrosages ont apporté au moins l'eau dont la culture avait besoin.",
+  },
+  non_couvert: {
+    label: "Besoin non couvert", icon: "🟠", bg: "#FAEEDA", text: "#633806",
+    help: "La culture a reçu moins d'eau que son besoin.",
+  },
+} as const;
+
+const mm = (v: number | null) => (v == null ? "—" : `${v.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} mm`);
+const day = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+
 const row: React.CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
@@ -24,7 +39,8 @@ const row: React.CSSProperties = {
 };
 
 /**
- * Onglet Besoins : irrigation calculée (ET0 × Kc − pluie) et lecture de
+ * Onglet Besoins : besoin en eau des 7 derniers jours (même calcul que le
+ * Suivi de l'irrigation : ET₀ × Kc, pluie mesurée, arrosages) et lecture de
  * la dernière analyse de sol comparée aux références de l'espèce.
  * Tous les calculs viennent du back.
  */
@@ -53,35 +69,45 @@ export default function NeedsTab({ needs }: { needs: CropNeeds | null }) {
       {/* ---------- Irrigation ---------- */}
       <div style={sectionTitle}>
         Irrigation
-        {water && (
+        {water && water.days > 0 && (
           <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0, marginLeft: 8 }}>
-            {water.days} derniers jours
+            7 derniers jours, du {day(water.start)} au {day(water.end)}
           </span>
         )}
       </div>
 
       {!water ? (
-        <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 14px" }}>
-          Besoin en eau indisponible : la ferme doit avoir une position pour
-          que la météo soit consultée.
+        <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 14px" }}>Besoin en eau indisponible.</p>
+      ) : water.problems.length ? (
+        <p style={{ fontSize: 13, color: "#633806", background: "#FAEEDA", borderRadius: 8, padding: "8px 12px", margin: "0 0 14px" }}>
+          Calcul impossible pour le moment, car {water.problems.join(" et ")}.
         </p>
       ) : (
         <>
           <div style={row}>
             <span style={{ color: "#6b7280" }}>
-              Évapotranspiration
+              Besoin de la culture
               {water.kc != null && (
-                <span style={{ fontSize: 11 }}> · ET0 {water.et0_mm} mm × Kc {water.kc}</span>
+                <span style={{ fontSize: 11 }}> · ET₀ {mm(water.et0_mm)} × Kc {water.kc_varies ? "moyen " : ""}{water.kc.toLocaleString("fr-FR")}</span>
               )}
             </span>
-            <span style={{ fontWeight: 500 }}>{water.etc_mm} mm</span>
+            <span style={{ fontWeight: 500 }}>{mm(water.need_mm)}</span>
           </div>
           <div style={row}>
             <span style={{ color: "#6b7280" }}>
-              Pluie
-              <span style={{ fontSize: 11 }}> · {water.rain_mm} mm tombés, 80 % utilisables</span>
+              Pluie mesurée
+              <span style={{ fontSize: 11 }}> · Open-Meteo</span>
             </span>
-            <span style={{ fontWeight: 500 }}>− {water.effective_rain_mm} mm</span>
+            <span style={{ fontWeight: 500 }}>{mm(water.rain_mm)}</span>
+          </div>
+          <div style={row}>
+            <span style={{ color: "#6b7280" }}>
+              Arrosages
+              <span style={{ fontSize: 11 }}>
+                {" · "}{water.irrigation_l > 0 ? `${water.irrigation_l.toLocaleString("fr-FR")} L sur la parcelle` : "aucun enregistré"}
+              </span>
+            </span>
+            <span style={{ fontWeight: 500 }}>{mm(water.irrigation_mm)}</span>
           </div>
 
           <div
@@ -90,25 +116,26 @@ export default function NeedsTab({ needs }: { needs: CropNeeds | null }) {
               borderTop: "1px solid #e5e7eb",
               marginTop: 4,
               paddingTop: 8,
-              alignItems: "baseline",
+              alignItems: "center",
             }}
           >
-            <span style={{ color: "#111827", fontWeight: 600 }}>Besoin net</span>
-            <span style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-              <span style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>
-                {water.net_need_mm} mm
-              </span>
-              {water.net_need_m3 != null && (
-                <span style={{ fontSize: 12, color: "#6b7280" }}>
-                  ≈ {water.net_need_m3.toLocaleString("fr-FR")} m³
-                </span>
-              )}
+            <span style={{ color: "#111827", fontWeight: 600 }}>
+              Besoin couvert {water.coverage_pct != null && <span style={{ fontWeight: 700 }}>{water.coverage_pct.toLocaleString("fr-FR")} %</span>}
             </span>
+            {water.status && (
+              <span
+                title={STATUS[water.status].help}
+                style={{
+                  fontSize: 12, fontWeight: 600, borderRadius: 999, padding: "3px 10px", cursor: "help",
+                  background: STATUS[water.status].bg, color: STATUS[water.status].text,
+                }}
+              >
+                {STATUS[water.status].icon} {STATUS[water.status].label}
+                {water.status === "non_couvert" && water.missing_mm != null ? ` : il manque ${mm(water.missing_mm)}` : ""}
+              </span>
+            )}
           </div>
-
-          <p style={{ fontSize: 12, color: "#374151", margin: "6px 0 16px", lineHeight: 1.45 }}>
-            → {water.message}
-          </p>
+          <div style={{ marginBottom: 16 }} />
         </>
       )}
 

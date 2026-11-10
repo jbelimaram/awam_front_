@@ -9,7 +9,6 @@ import { useSelection } from "../hooks/useSelection";
 import { useToast } from "../hooks/useToast";
 import { climateService } from "../Services/climateService";
 import type { ClimateSite, ClimateSummary } from "../types/climate";
-import { useConfirm } from "../hooks/useConfirm";
 import ActionButton from "../components/Common/ActionButton";
 
 /** Nom des scénarios d'émissions, pour l'utilisateur */
@@ -42,7 +41,6 @@ function statusLine(s: ClimateSite): { text: string; color: string } | null {
 
 function ClimateContent() {
   const { showToast } = useToast();
-  const confirm = useConfirm();
   const [sites, setSites] = useState<ClimateSite[] | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [scenario, setScenario] = useState<string | null>(null);
@@ -99,10 +97,10 @@ function ClimateContent() {
   }, [selectedId, ready, scenario, showToast]);
 
   const removeSite = async (site: ClimateSite) => {
-    if (!(await confirm({ title: `Supprimer « ${site.name} » ?`, message: "Son climat 2020-2040 sera aussi supprimé." }))) return;
+    if (!window.confirm(`Retirer « ${site.name} » et son climat ?`)) return;
     try {
       await climateService.removeSite(site.id);
-showToast("success", `${site.name} supprimé.`);
+      showToast("success", `${site.name} retiré.`);
       loadSites();
     } catch (e) {
       showToast("error", e instanceof Error ? e.message : "Suppression impossible.");

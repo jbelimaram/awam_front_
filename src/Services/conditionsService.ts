@@ -1,5 +1,5 @@
 import { api } from "./api";
-import type { MonthConditions, ParcelImpacts, YearComparison } from "../types/conditions";
+import type { MonthConditions, ParcelImpacts, ParcelVegetation, YearComparison } from "../types/conditions";
 
 // api/routes/conditions.py, monté sous /api
 export const conditionsService = {
@@ -17,4 +17,8 @@ export const conditionsService = {
   /** Onglet Impacts : stades et climat comparé à la normale, et eau, pour chaque culture */
   impacts: (parcelId: number, month: string): Promise<ParcelImpacts> =>
     api.get<ParcelImpacts>(`/api/parcels/${parcelId}/impacts?month=${month}`),
+
+  /** Onglet Végétation : images du mois, indices interprétés, climat entre deux images */
+  vegetation: (parcelId: number, month: string): Promise<ParcelVegetation> =>
+    api.get<ParcelVegetation>(`/api/parcels/${parcelId}/vegetation?month=${month}`),
 };

@@ -6,16 +6,20 @@ import { shortDay } from "../Planning/planningUtils";
 import { fmt } from "./equipmentDisplay";
 
 /** Couleurs et libellés des états du besoin couvert */
-const STATUS: Record<CoverageStatus, { label: string; icon: string; bg: string; text: string }> = {
-  manque: { label: "manque d'eau", icon: "🔴", bg: "#FCEBEB", text: "#791F1F" },
-  juste: { label: "un peu juste", icon: "🟠", bg: "#FAEEDA", text: "#633806" },
-  bien: { label: "bien couvert", icon: "🟢", bg: "#EAF3DE", text: "#27500A" },
-  trop: { label: "trop d'eau", icon: "🔵", bg: "#E6F1FB", text: "#0C447C" },
+const STATUS: Record<CoverageStatus, { label: string; icon: string; bg: string; text: string; help: string }> = {
+  couvert: {
+    label: "besoin couvert", icon: "🟢", bg: "#EAF3DE", text: "#27500A",
+    help: "La pluie et les arrosages ont apporté au moins l'eau dont la culture avait besoin.",
+  },
+  non_couvert: {
+    label: "besoin non couvert", icon: "🟠", bg: "#FAEEDA", text: "#633806",
+    help: "La culture a reçu moins d'eau que son besoin.",
+  },
 };
 
 const pill = (s: CoverageStatus | null) =>
   s ? (
-    <span style={{ fontSize: 11.5, borderRadius: 999, padding: "2px 10px", background: STATUS[s].bg, color: STATUS[s].text, whiteSpace: "nowrap" }}>
+    <span title={STATUS[s].help} style={{ fontSize: 11.5, borderRadius: 999, padding: "2px 10px", background: STATUS[s].bg, color: STATUS[s].text, whiteSpace: "nowrap", cursor: "help" }}>
       {STATUS[s].icon} {STATUS[s].label}
     </span>
   ) : (
@@ -49,7 +53,7 @@ function CropCard({ c }: { c: CropWaterBalance }) {
       <div style={{ padding: "12px 14px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
           <strong style={{ fontSize: 14, color: "#111827" }}>{c.label}</strong>
-          <span style={{ fontSize: 12, color: "#6b7280" }}>· les 7 derniers jours</span>
+          <span style={{ fontSize: 12, color: "#6b7280" }}>· les 7 derniers jours, du {day(b.start)} au {day(b.end)}</span>
           <span style={{ marginLeft: "auto" }}>{pill(b.status)}</span>
         </div>
         {blocked ? (
@@ -59,14 +63,19 @@ function CropCard({ c }: { c: CropWaterBalance }) {
         ) : (
           <>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8 }}>
-              <Kpi icon="☀️" label="Besoin de la culture" value={mm(b.need_mm)} note={`ET₀ ${fmt(b.et0_mm, 1)} mm × Kc ${fmt(b.kc ?? 0, 2)}`} />
-              <Kpi icon="🌧" label="Pluie utile" value={mm(b.rain_useful_mm)} note={`${fmt(b.rain_mm, 1)} mm tombés`} />
+              <Kpi
+                icon="☀️"
+                label="Besoin de la culture"
+                value={mm(b.need_mm)}
+                note={`ET₀ ${fmt(b.et0_mm, 1)} mm × Kc ${b.kc_varies ? "moyen " : ""}${fmt(b.kc ?? 0, 2)}`}
+              />
+              <Kpi icon="🌧" label="Pluie mesurée" value={mm(b.rain_mm)} note="Open-Meteo, comptée en entier" />
               <Kpi icon="🚿" label="Irrigation" value={mm(b.irrigation_mm)} note={water(b.irrigation_l)} />
               <Kpi
                 icon="💧"
                 label="Besoin couvert"
                 value={b.coverage_pct === null ? "—" : `${fmt(b.coverage_pct, 0)} %`}
-                note={b.status === "manque" || b.status === "juste" ? `il manque ${water(b.missing_l ?? 0)}` : b.status === "trop" ? "plus que le besoin" : "besoin couvert"}
+                note={b.status === "non_couvert" ? `il manque ${water(b.missing_l ?? 0)}` : "eau reçue ≥ besoin"}
                 tone={b.status}
               />
             </div>
@@ -86,7 +95,7 @@ function CropCard({ c }: { c: CropWaterBalance }) {
           >
             <span>Semaine</span>
             <span style={{ textAlign: "right" }}>Besoin</span>
-            <span style={{ textAlign: "right" }}>Pluie + irrigation</span>
+            <span style={{ textAlign: "right" }}>Pluie + arrosages</span>
             <span style={{ textAlign: "right" }}>Couvert</span>
             <span style={{ textAlign: "center" }}>État</span>
           </div>
@@ -116,9 +125,10 @@ function CropCard({ c }: { c: CropWaterBalance }) {
 
 /**
  * Onglet « Suivi » : pour chaque culture en cours de la parcelle, a-t-elle
- * reçu assez d'eau ? Besoin estimé (ET₀ × Kc, FAO-56), pluie utile,
- * irrigation et besoin couvert, sur les 7 derniers jours et semaine par
- * semaine. Quand une donnée manque, aucun pourcentage n'est inventé.
+ * reçu assez d'eau ? Besoin (ET₀ × Kc jour par jour, FAO-56), pluie mesurée,
+ * arrosages et besoin couvert, sur les 7 derniers jours et semaine par
+ * semaine, jusqu'au dernier jour de météo enregistré. Quand une donnée
+ * manque, aucun pourcentage n'est affiché.
  */
 export default function WaterBalanceTab({ parcelId, parcelName }: { parcelId: number; parcelName: string }) {
   const { showToast } = useToast();
@@ -153,16 +163,6 @@ export default function WaterBalanceTab({ parcelId, parcelName }: { parcelId: nu
       ) : (
         <>
           {data.crops.map((c) => <CropCard key={c.crop_id} c={c} />)}
-          {data.unassigned_l_last7 ? (
-            <p style={{ fontSize: 12, color: "#6b7280", margin: 0 }}>
-              {water(data.unassigned_l_last7)} arrosés « toute la parcelle » ces 7 derniers jours ne sont comptés pour aucune culture.
-            </p>
-          ) : null}
-          <p style={{ fontSize: 11.5, color: "#9ca3af", margin: 0, lineHeight: 1.6 }}>
-            Besoin estimé pour une culture bien arrosée, en conditions normales. Pluie utile : 80 % de la pluie tombée.
-            États : moins de {data.thresholds.low} % manque d'eau ; jusqu'à {data.thresholds.ok} % un peu juste ;
-            jusqu'à {data.thresholds.high} % bien couvert ; au-delà, trop d'eau.
-          </p>
         </>
       )}
     </div>

@@ -21,7 +21,6 @@ export interface Equipment {
   emitters_per_plant: number | null;
   plant_spacing_m: number | null;
   row_spacing_m: number | null;
-  efficiency_pct: number | null;
   active: boolean;
   notes: string | null;
   /** Calculés par le back */
@@ -92,7 +91,8 @@ export interface WateringHistoryItem extends Watering {
 // Suivi : besoin en eau et besoin couvert
 // ======================================================================
 
-export type CoverageStatus = "manque" | "juste" | "bien" | "trop";
+/** Besoin couvert si l'eau reçue atteint le besoin ; sinon non couvert (aucun autre seuil) */
+export type CoverageStatus = "couvert" | "non_couvert";
 
 /** Bilan d'eau d'une culture sur une période */
 export interface WaterBalance {
@@ -100,9 +100,12 @@ export interface WaterBalance {
   end: string;
   days: number;
   et0_mm: number;
+  /** Kc moyen de la période (besoin ÷ ET₀), référentiel AWAM */
   kc: number | null;
+  /** Le stade, donc le Kc, change pendant la période */
+  kc_varies: boolean;
+  /** Pluie mesurée (Open-Meteo), comptée en entier */
   rain_mm: number;
-  rain_useful_mm: number;
   irrigation_l: number;
   need_mm: number | null;
   need_l: number | null;
@@ -133,7 +136,6 @@ export interface ParcelWaterBalance {
   parcel_id: number;
   parcel_name: string;
   crops: CropWaterBalance[];
-  /** Litres arrosés « toute la parcelle » sur une parcelle à plusieurs cultures */
-  unassigned_l_last7: number | null;
-  thresholds: { low: number; ok: number; high: number };
+  /** Dernier jour de météo enregistré : les périodes s'y arrêtent */
+  weather_until: string | null;
 }

@@ -151,5 +151,86 @@ export interface ParcelImpacts {
   month: string;
   normals_period: [number, number];
   season_start_month: number;
+  /** Dernier jour de météo enregistré pour la ferme */
+  weather_until: string | null;
   crops: CropImpacts[];
+}
+
+// ======================================================================
+// Onglet Végétation
+// ======================================================================
+
+export type VegetationIndex = "NDVI" | "NDMI" | "NDRE";
+
+export interface IndexChange {
+  /** Écart exact de l'indice */
+  diff: number;
+  /** Pourcentage, seulement si les deux valeurs sont positives */
+  pct: number | null;
+  direction: "up" | "down" | "same";
+}
+
+/** Un indice lu avec le référentiel AWAM, pour une culture */
+export interface IndexReading {
+  indice: VegetationIndex;
+  value: number;
+  /** "low" sous le seuil, "normal", "high" au-dessus ; null : pas de seuil à cette période */
+  level: "low" | "normal" | "high" | null;
+  low: number | null;
+  high: number | null;
+  inverted?: boolean;
+  explanation: string | null;
+  recommendation: string | null;
+}
+
+export interface ClimateBetween {
+  start: string;
+  end: string;
+  days: number;
+  weather_complete: boolean;
+  rain_mm: number;
+  et0_mm: number;
+  crops: { crop_id: number; need_mm: number | null; received_mm: number | null; coverage_pct: number | null; covered: boolean | null; problems: string[] }[];
+}
+
+export interface VegetationScene {
+  date: string;
+  cloud_cover: number | null;
+  valid_ratio: number | null;
+  values: Partial<Record<VegetationIndex, number>>;
+  previous_date: string | null;
+  changes: Partial<Record<VegetationIndex, IndexChange | null>>;
+   interpretation: { crop_id: number; readings: IndexReading[] }[];
+  /** Place de chaque valeur dans la plage habituelle de la parcelle */
+  baselines: Partial<Record<VegetationIndex, IndexBaseline>>;
+  climate_before: ClimateBetween | null;
+}
+
+/** Place d'une valeur dans la plage habituelle de la parcelle (même calcul que la page Fermes) */
+export interface IndexBaseline {
+  status: "ok" | "insufficient" | "no_data";
+  verdict: "below" | "within" | "above" | null;
+  low: number | null;
+  high: number | null;
+  years: number[];
+  message: string;
+}
+
+export interface ParcelVegetation {
+  parcel_id: number;
+  parcel_name: string;
+  month: string;
+  crops: { crop_id: number; label: string; age_years: number | null; stages: string[] }[];
+  multi_crop: boolean;
+  satellite_since: string | null;
+  excluded_scenes: number;
+  scenes: VegetationScene[];
+  summary: {
+    first_date: string;
+    last_date: string;
+    changes: Partial<Record<VegetationIndex, IndexChange | null>>;
+    latest: Partial<Record<VegetationIndex, number>>;
+    baselines: Partial<Record<VegetationIndex, IndexBaseline>>;
+    water: ClimateBetween | null;
+  } | null;
 }

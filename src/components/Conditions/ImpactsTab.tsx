@@ -100,8 +100,17 @@ function WaterBlock({ c, monthLabel, seasonStart }: { c: CropImpacts; monthLabel
   }
   const s = c.water.season;
   const tone = w.covered ? COVERED : NOT_COVERED;
+  // Le mois est-il calculé en entier ? Sinon, jusqu'au dernier jour de météo enregistré
+  const [y, m] = w.start.split("-").map(Number);
+  const monthEnd = new Date(y, m, 0).getDate();
+  const partial = Number(w.end.slice(8, 10)) < monthEnd;
   return (
     <>
+      {partial && (
+        <p style={{ fontSize: 12, color: "#4b5563", margin: "0 0 8px" }}>
+          Calculé du {day(w.start)} au {fullDay(w.end)}, dernier jour de météo enregistré.
+        </p>
+      )}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
         <div style={kpi}>
           <div style={{ fontSize: 11.5, color: "#6b7280" }}>Besoin de la culture</div>
