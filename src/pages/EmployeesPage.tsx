@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import DashboardLayout from "../components/Dashboard/DashboardLayout";
 import FarmFormModal from "../components/Dashboard/FarmFormModal";
 import ParcelSelectors from "../components/Dashboard/ParcelSelectors";
@@ -72,7 +73,20 @@ function EmployeesContent({
   const [editing, setEditing] = useState<FarmEmployee | null>(null);
   const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
   /** Zone principale : fiche d'un employé, équipes, ou planification */
-  const [view, setView] = useState<"employee" | "teams" | "planning" | "history">("employee");
+  // Vue demandée par la navigation (ex. « Planifier une intervention » depuis la page Alertes)
+  type View = "employee" | "teams" | "planning" | "history";
+  const location = useLocation();
+  const requestedView = (location.state as { view?: View } | null)?.view;
+  const isView = (v: unknown): v is View => v === "employee" || v === "teams" || v === "planning" || v === "history";
+  const [view, setView] = useState<View>(isView(requestedView) ? requestedView : "employee");
+  useEffect(() => {
+    if (isView(requestedView)) setView(requestedView);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
+  useEffect(() => {
+    if (isView(requestedView)) setView(requestedView);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
 
   const farmName = farms.find((f) => f.id === selectedFarmId)?.name ?? "";
   /**

@@ -1,8 +1,10 @@
 import { api } from "./api";
-import type { Alert } from "../types/alert";
+import type { Alert, AlertsOverview } from "../types/alert";
 
 // Correspond à app/api/routes/alerts.py, monté sous /api
 export const alertService = {
+  /** La page Alertes : actives, clôturées sur 30 jours, et compteurs, sur toutes les fermes */
+  overview: (): Promise<AlertsOverview> => api.get<AlertsOverview>("/api/alerts/overview"),
   /** Alertes de toutes les parcelles de l'utilisateur */
   list: (state: "open" | "closed" | "all" = "open"): Promise<Alert[]> =>
     api.get<Alert[]>(`/api/alerts?state=${state}`),

@@ -64,6 +64,21 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   return response.json();
 }
 
+/**
+ * Télécharge un fichier (ex. un rapport PDF) avec la même authentification
+ * que les autres demandes, et renvoie son contenu et son nom.
+ */
+async function download(endpoint: string): Promise<{ blob: Blob; filename: string | null }> {
+  const response = await fetch(`${API_URL}${endpoint}`, { credentials: 'include' });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new ApiError(response.status, errorData?.detail || 'Une erreur est survenue.');
+  }
+  const disposition = response.headers.get('Content-Disposition') ?? '';
+  const match = /filename="?([^";]+)"?/.exec(disposition);
+  return { blob: await response.blob(), filename: match ? match[1] : null };
+}
+
 export const api = {
   get: <T>(endpoint: string) => request<T>(endpoint, { method: 'GET' }),
   post: <T>(endpoint: string, body?: any) =>
@@ -73,6 +88,7 @@ export const api = {
   patch: <T>(endpoint: string, body?: any): Promise<T> =>
   request<T>(endpoint, { method: 'PATCH', body }),
   delete: <T>(endpoint: string) => request<T>(endpoint, { method: 'DELETE' }),
+  download,
 };
 
 export { ApiError };

@@ -42,6 +42,12 @@ export function SelectionProvider({ children }: SelectionProviderProps) {
   const requestedFarmId = (location.state as { farmId?: number } | null)?.farmId ?? null;
   /** Ferme demandée par la dernière navigation, appliquée dès que la liste est chargée */
   const pendingFarmId = useRef<number | null>(null);
+  /**
+   * Parcelle demandée de la même façon (ex. « Planifier » depuis la page
+   * Alertes) : sélectionnée à l'ouverture, une fois sa ferme choisie.
+   */
+  const requestedParcelId = (location.state as { parcelId?: number } | null)?.parcelId ?? null;
+  const pendingParcelId = useRef<number | null>(null);
 
   const refreshFarms = useCallback(async (selectNewestId?: number) => {
     setLoadingFarms(true);
@@ -87,7 +93,8 @@ export function SelectionProvider({ children }: SelectionProviderProps) {
   // même si la page était déjà ouverte ; ensuite, l'utilisateur choisit librement
   useEffect(() => {
     if (requestedFarmId !== null) pendingFarmId.current = requestedFarmId;
-  }, [location.key, requestedFarmId]);
+    if (requestedParcelId !== null) pendingParcelId.current = requestedParcelId;
+  }, [location.key, requestedFarmId, requestedParcelId]);
 
   useEffect(() => {
     const id = pendingFarmId.current;
@@ -115,7 +122,24 @@ export function SelectionProvider({ children }: SelectionProviderProps) {
     }
     setSelectedParcelId(parcelsForSelectedFarm[0]?.id ?? null);
   }, [parcelsForSelectedFarm, selectedParcelId]);
-
+  
+  // Parcelle demandée par la navigation : sa ferme est d'abord sélectionnée,
+  // même si la navigation ne l'a pas transmise, puis la parcelle, une seule
+  // fois ; ensuite, choix libre
+  useEffect(() => {
+    const id = pendingParcelId.current;
+    if (id === null) return;
+    const parcel = parcels.find((p) => p.id === id);
+    if (!parcel) return;
+    if (parcel.farm_id !== selectedFarmId) {
+      pendingFarmId.current = null;
+      setSelectedFarmId(parcel.farm_id);
+      return;
+    }
+    setSelectedParcelId(id);
+    pendingParcelId.current = null;
+  }, [parcels, selectedFarmId, parcelsForSelectedFarm, location.key]);
+  
   const selectedParcel = useMemo(
     () => parcels.find((p) => p.id === selectedParcelId) ?? null,
     [parcels, selectedParcelId]

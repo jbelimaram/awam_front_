@@ -4,18 +4,18 @@ import FarmFormModal from "../components/Dashboard/FarmFormModal";
 import ParcelSelectors from "../components/Dashboard/ParcelSelectors";
 import ImpactsTab from "../components/Conditions/ImpactsTab";
 import ParametersTab from "../components/Conditions/ParametersTab";
+import ReportsTab from "../components/Conditions/ReportsTab";
 import VegetationTab from "../components/Conditions/VegetationTab";
 import { SelectionProvider } from "../context/SelectionContext";
 import { useSelection } from "../hooks/useSelection";
 
-type Tab = "parameters" | "impacts" | "vegetation" | "alerts" | "reports";
+type Tab = "parameters" | "impacts" | "vegetation" | "reports";
 
 /** Les cinq onglets ; « next » = pas encore réalisé */
 const TABS: { key: Tab; label: string; icon: string; next?: string }[] = [
   { key: "parameters", label: "Paramètres", icon: "🌡️" },
   { key: "impacts", label: "Impacts", icon: "🌱" },{ key: "vegetation", label: "Végétation", icon: "🛰️" },
-  { key: "alerts", label: "Alertes", icon: "🔔", next: "Les alertes climatiques, prévues et observées, avec le bouton Planifier." },
-  { key: "reports", label: "Rapports", icon: "📄", next: "Les rapports PDF du mois ou de la saison, pour l'aide à la décision." },
+   { key: "reports", label: "Rapports", icon: "📄" },
 ];
 
 const card: React.CSSProperties = {
@@ -82,6 +82,12 @@ function ConditionsContent({ showFarmForm, onCloseFarmForm }: { showFarmForm: bo
             <p style={muted}>
               <strong style={{ color: "#374151" }}>Prochaine étape.</strong> {current.next}
             </p>
+          ) : tab === "reports" ? (
+            selectedParcel ? (
+              <ReportsTab farmId={selectedFarmId} parcelId={selectedParcel.id} />
+            ) : (
+              <p style={muted}>Sélectionnez une parcelle, dans la carte Parcelles à gauche, pour générer son rapport.</p>
+            )
           ) : tab === "vegetation" ? (
             selectedParcel ? (
               <VegetationTab farmId={selectedFarmId} parcelId={selectedParcel.id} parcelName={selectedParcel.nom} />

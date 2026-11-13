@@ -1,28 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSelection } from "../../hooks/useSelection";
-import { alertService } from "../../Services/alertService";
 import { diagnosisService } from "../../Services/diagnosisService";
-import { subscribeParcelEvents, useParcelEventTick } from "../../hooks/useParcelEvents";
-import type { Alert } from "../../types/alert";
+import { useParcelEventTick } from "../../hooks/useParcelEvents";
 import type { ParcelInterpretation } from "../../types/diagnosis";
-import { ALERT_LEVEL_STYLE, alertLevelStyle } from "../../utils/alertLevels";
+import { ALERT_LEVEL_STYLE } from "../../utils/alertLevels";
 
 /**
- * Fenêtres de l'historique, en jours calendaires. Les indices remontent
- * plus loin : le satellite ne repasse que tous les 5 jours environ, et une
- * image nuageuse est perdue ; sur 5 jours, il n'y aurait souvent rien.
+ * Fenêtre de l'historique, en jours calendaires : le satellite ne repasse
+ * que tous les 5 jours environ, et une image nuageuse est perdue. Les
+ * alertes ne sont plus ici : elles ont leur page, « Alertes ».
  */
 const INDICE_DAYS = 30;
-const ALERT_DAYS = 5;
 
-type EventKind = "indice" | "alert";
-type HistoryFilter = "all" | EventKind;
-
-const FILTERS: { key: HistoryFilter; label: string }[] = [
-  { key: "all", label: "Tout" },
-  { key: "indice", label: "Indices" },
-  { key: "alert", label: "Alertes" },
-];
+type EventKind = "indice";
 
 /** Verdict d'un indice face à son seuil */
 const INDICATOR_VERDICT: Record<string, string> = {
@@ -88,47 +78,26 @@ function indiceEvent(it: ParcelInterpretation): HistoryEvent {
   };
 }
 
-function alertEvent(a: Alert): HistoryEvent | null {
-  const day = a.last_scene_date ?? a.created_at?.slice(0, 10);
-  if (!day) return null;
-  const lv = alertLevelStyle(a.severity);
-  return {
-    key: `al-${a.id}`,
-    kind: "alert",
-    day,
-    sortKey: `${day}T00:00:02`,
-    icon: "⚠️",
-    iconBg: lv.bg,
-    iconFg: lv.color,
-    title: `${a.severity_label} · ${a.crop_label ?? "Culture"}`,
-    detail: [a.cause, `${a.parcel_name} · ${a.farm_name}`].filter(Boolean).join(" · "),
-    badge: { text: "Alerte", color: lv.color, bg: lv.bg },
-  };
-}
-
 // ----------------------------------------------------------------------
 // La carte
 // ----------------------------------------------------------------------
 
 /**
- * Historique des 5 derniers jours, en un seul fil chronologique, à la
- * manière d'un journal d'activité : analyses satellite de la parcelle
- * sélectionnée et alertes de toutes les fermes, mélangées par date, les
- * plus récentes en haut.
+ * Historique des analyses satellite de la parcelle sélectionnée, en un seul
+ * fil chronologique, à la manière d'un journal d'activité, les plus
+ * récentes en haut.
  *
  * Chaque événement a une icône ronde aux couleurs de son niveau, un titre
  * court, une ligne de détail et une étiquette de niveau.
  *
- * Une seule zone défile : le titre et les filtres restent fixés en haut.
+ * Une seule zone défile : le titre reste fixé en haut.
  */
 export default function OperationHistoryCard() {
   const { selectedParcelId } = useSelection();
-  const [filter, setFilter] = useState<HistoryFilter>("all");
   const [indices, setIndices] = useState<ParcelInterpretation[] | null>(null);
-  const [alerts, setAlerts] = useState<Alert[] | null>(null);
 
-  // Nouvelle analyse ou nouvelle alerte : les données sont relues
-  const tick = useParcelEventTick(selectedParcelId, ["indices", "alerts"]);
+  // Nouvelle analyse : les données sont relues
+  const tick = useParcelEventTick(selectedParcelId, ["indices"]);
 
   useEffect(() => {
     if (!selectedParcelId) {
@@ -146,71 +115,30 @@ export default function OperationHistoryCard() {
     };
   }, [selectedParcelId, tick]);
 
-  const loadAlerts = useCallback(() => {
-    alertService.recent(ALERT_DAYS).then(setAlerts).catch(() => setAlerts([]));
-  }, []);
+  const loading = indices === null;
 
-  useEffect(() => {
-    loadAlerts();
-    return subscribeParcelEvents((event) => {
-      if (event.kind === "alerts") loadAlerts();
-    });
-  }, [loadAlerts]);
-
-  const loading = indices === null || alerts === null;
-
-  /** Tous les événements, filtrés, regroupés par jour, les plus récents en haut */
+  /** Toutes les analyses, regroupées par jour, les plus récentes en haut */
   const days = useMemo(() => {
-    const events: HistoryEvent[] = [
-      ...(indices ?? []).map(indiceEvent),
-      ...(alerts ?? []).map(alertEvent),
-    ].filter((e): e is HistoryEvent => e !== null && (filter === "all" || e.kind === filter));
+    const events: HistoryEvent[] = (indices ?? [])
+      .map(indiceEvent)
+      .filter((e): e is HistoryEvent => e !== null);
     events.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
     const byDay = new Map<string, HistoryEvent[]>();
     for (const e of events) byDay.set(e.day, [...(byDay.get(e.day) ?? []), e]);
     return [...byDay.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  }, [indices, alerts, filter]);
+  }, [indices]);
 
-  const emptyText =
-    !selectedParcelId && filter !== "alert"
-      ? "Sélectionnez une parcelle pour voir ses analyses."
-      : filter === "indice"
-        ? `Aucune analyse sur les ${INDICE_DAYS} derniers jours.`
-        : filter === "alert"
-          ? `Aucune alerte sur les ${ALERT_DAYS} derniers jours.`
-          : "Rien à signaler pour le moment.";
+  const emptyText = !selectedParcelId
+    ? "Sélectionnez une parcelle pour voir ses analyses."
+    : `Aucune analyse sur les ${INDICE_DAYS} derniers jours.`;
 
   return (
     <div style={{ fontFamily: "system-ui, sans-serif" }}>
       {/* En-tête fixe : reste visible pendant le défilement */}
       <div style={{ position: "sticky", top: -16, zIndex: 1, background: "#fff", margin: "-16px -16px 0", padding: "16px 16px 10px" }}>
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
           <strong style={{ fontSize: 15, color: "#111827" }}>Historique</strong>
-          <span style={{ fontSize: 12, color: "#9ca3af" }}>
-            Indices : {INDICE_DAYS} j · alertes : {ALERT_DAYS} j
-          </span>
-        </div>
-        <div role="tablist" aria-label="Filtrer l'historique" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {FILTERS.map((f) => {
-            const active = filter === f.key;
-            return (
-              <button
-                key={f.key}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => setFilter(f.key)}
-                style={{
-                  padding: "4px 12px", fontSize: 12, borderRadius: 999, cursor: "pointer",
-                  border: `1px solid ${active ? "#1b4332" : "#e5e7eb"}`,
-                  background: active ? "#1b4332" : "#fff",
-                  color: active ? "#fff" : "#374151", fontWeight: active ? 600 : 400,
-                }}
-              >
-                {f.label}
-              </button>
-            );
-          })}
+          <span style={{ fontSize: 12, color: "#9ca3af" }}>Analyses satellite : {INDICE_DAYS} j</span>
         </div>
       </div>
 

@@ -1,11 +1,21 @@
 /**
- * Alerte : un ÉPISODE d'anomalie sur une culture, détecté par le diagnostic
- * satellite (app/services/alert_service.py côté back).
+ * Alerte d'une culture. Deux types (alert_type) :
  *
- *   alert        → « Anomalie détectée » : signal anormal confirmé sur deux images
- *   strong_alert → « Anomalie persistante » : perte de vigueur confirmée sur deux images
+ *   « diagnostic_satellite » : un épisode d'anomalie détecté par le diagnostic
+ *   satellite (app/services/alert_service.py côté back) ;
+ *     alert        → « Anomalie détectée » : signal anormal confirmé sur deux images
+ *     strong_alert → « Anomalie persistante » : perte de vigueur confirmée sur deux images
+ *
+ *   « besoin_eau » : le besoin en eau des 7 derniers jours n'est pas couvert
+ *   (app/services/water_alert_service.py), vérifié chaque matin ;
+ *     besoin_non_couvert → « Besoin non couvert »
  */
-export type AlertSeverity = "alert" | "strong_alert";
+export type AlertSeverity = "alert" | "strong_alert" | "besoin_non_couvert" | "anomalie_vegetation";
+
+/** Types d'alertes */
+export const ALERT_TYPE_SATELLITE = "diagnostic_satellite";
+export const ALERT_TYPE_WATER = "besoin_eau";
+export const ALERT_TYPE_VEGETATION = "anomalie_vegetation";
 
 /** Raison de fermeture */
 export type AlertResolution = "treated" | "false_alarm" | "auto";
@@ -46,4 +56,17 @@ export interface Alert {
   updated_at?: string | null;
   /** Niveau de chaque image de l'épisode */
   history: AlertHistoryItem[];
+}
+
+
+/** La page Alertes : alertes actives, clôturées sur 30 jours, et compteurs */
+export interface AlertsOverview {
+  active: Alert[];
+  closed: Alert[];
+  /** Nombre de jours des alertes clôturées affichées */
+  closed_days: number;
+  active_count: number;
+  closed_count: number;
+  /** Cultures qui ont au moins une alerte active */
+  crops_concerned: number;
 }

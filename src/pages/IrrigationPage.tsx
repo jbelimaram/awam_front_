@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import DashboardLayout from "../components/Dashboard/DashboardLayout";
 import FarmFormModal from "../components/Dashboard/FarmFormModal";
 import ParcelSelectors from "../components/Dashboard/ParcelSelectors";
@@ -30,7 +31,15 @@ const muted: React.CSSProperties = { fontSize: 13, color: "#6b7280", margin: 0 }
 
 function IrrigationContent({ showFarmForm, onCloseFarmForm }: { showFarmForm: boolean; onCloseFarmForm: () => void }) {
   const { selectedFarmId, selectedParcel, parcelsForSelectedFarm, refreshFarms } = useSelection();
-  const [tab, setTab] = useState<Tab>("equipment");
+  // Onglet demandé par la navigation (ex. « Planifier un arrosage » depuis la page Alertes)
+  const location = useLocation();
+  const requestedTab = (location.state as { tab?: Tab } | null)?.tab;
+  const isTab = (t: unknown): t is Tab => TABS.some((x) => x.key === t);
+  const [tab, setTab] = useState<Tab>(isTab(requestedTab) ? requestedTab : "equipment");
+  useEffect(() => {
+    if (isTab(requestedTab)) setTab(requestedTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
   const current = TABS.find((t) => t.key === tab)!;
 
   return (

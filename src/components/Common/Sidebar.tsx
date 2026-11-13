@@ -348,6 +348,34 @@ export default function Sidebar({ collapsed, onToggle, onAddFarm }: SidebarProps
           {!collapsed && <span>Climat et cultures</span>}
         </button>
 
+        
+        {/* ---- Alertes ---- */}
+        <button
+          type="button"
+          style={itemStyle(location.pathname === "/alertes")}
+          onClick={() => navigate("/alertes")}
+          onMouseEnter={() => preloadPath("/alertes")}
+          onFocus={() => preloadPath("/alertes")}
+          title="Alertes"
+        >
+          <span style={{ fontSize: 17 }}>🔔</span>
+          {!collapsed && <span>Alertes</span>}
+        </button>
+        
+
+        {/* ---- Facteurs de risque ---- */}
+        <button
+          type="button"
+          style={itemStyle(location.pathname === "/facteurs-risque")}
+          onClick={() => navigate("/facteurs-risque")}
+          onMouseEnter={() => preloadPath("/facteurs-risque")}
+          onFocus={() => preloadPath("/facteurs-risque")}
+          title="Facteurs de risque"
+        >
+          <span style={{ fontSize: 17 }}>🌡️</span>
+          {!collapsed && <span>Facteurs de risque</span>}
+        </button>
+
         {/* ---- Projection climatique ---- */}
         <button
           type="button"
